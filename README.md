@@ -14,3 +14,4 @@ hopeful deadline, end of Januray.
 
 So here is a rough plan of the project 
 ![Uploading Screenshot 2024-12-31 at 11.08.40 PM.png…]()
+<img width="546" alt="Screenshot 2024-12-31 at 11 09 42 PM" src="https://github.com/user-attachments/assets/e520e803-1c64-4890-849f-d45901353618" />
