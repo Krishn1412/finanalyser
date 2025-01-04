@@ -4,6 +4,7 @@ import yfinance as yf
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from app.agents.teams.RAGTeam import test_pandas
 from app.agents.utils import get_ticker
 
 
@@ -28,21 +29,13 @@ def fetch_finance_details(
         cash_flow_info = ticker_data.cash_flow
         balance_sheet_info = ticker_data.balance_sheet
         financial_details_info = ticker_data.financials
-        if not cash_flow_info:
-            return {"error": "No financial information available."}
+        # if not cash_flow_info:
+        #     return {"error": "No financial information available."}
         
-        financial_details = {
-            "Name": info.get("longName", "N/A"),
-            "Sector": info.get("sector", "N/A"),
-            "Industry": info.get("industry", "N/A"),
-            "Market Cap": str(info.get("marketCap", "N/A")),
-            "Price to Earnings (P/E)": str(info.get("trailingPE", "N/A")),
-            "Dividend Yield": str(info.get("dividendYield", "N/A")),
-            "Revenue": str(info.get("totalRevenue", "N/A")),
-            "Net Income": str(info.get("netIncomeToCommon", "N/A")),
-        }
-
-        return financial_details
+        
+        ans = test_pandas(financial_details_info)
+        print(ans)
+        return financial_details_info
     except Exception as e:
         return {"error": f"Failed to fetch data: {repr(e)}"}
 

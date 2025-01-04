@@ -10,3 +10,4 @@ def get_ticker(company_name):
 
     company_code = data['quotes'][0]['symbol']
     return company_code
+

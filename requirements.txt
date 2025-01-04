@@ -3,3 +3,7 @@ langchain_community
 langchain_anthropic
 langchain_experimental
 yfinance
+langchain_google_genai
+python-dotenv
+tabulate
+psycopg2-binary
