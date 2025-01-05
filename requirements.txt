@@ -7,3 +7,4 @@ langchain_google_genai
 python-dotenv
 tabulate
 psycopg2-binary
+black

@@ -2,7 +2,10 @@ import logging
 import psycopg2
 from psycopg2 import pool
 import pandas as pd
+import json
+from app.agents.utils import db_data_to_df
 from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USERNAME
+
 username = DB_USERNAME
 password = DB_PASSWORD
 host = DB_HOST
@@ -11,10 +14,17 @@ dbname = DB_NAME
 
 logger = logging.getLogger(__name__)
 
+
 def create_connection_pool():
     try:
         connection_pool = psycopg2.pool.SimpleConnectionPool(
-            1, 10, user=username, password=password, host=host, port=port, database=dbname
+            1,
+            10,
+            user=username,
+            password=password,
+            host=host,
+            port=port,
+            database=dbname,
         )
         if connection_pool:
             print("Connection pool created successfully")
@@ -22,6 +32,7 @@ def create_connection_pool():
     except Exception as e:
         print(f"Error creating connection pool: {e}")
         return None
+
 
 def execute_query(query, params=None):
     connection_pool = create_connection_pool()
@@ -37,6 +48,33 @@ def execute_query(query, params=None):
             return None
         finally:
             connection_pool.putconn(conn)
+
+
+def insert_or_update_company_data(company_name, data):
+    connection_pool = create_connection_pool()
+    if not connection_pool:
+        logger.error("Connection pool not available.")
+        return
+
+    conn = connection_pool.getconn()
+    try:
+        with conn.cursor() as cursor:
+            query = """
+            INSERT INTO company_data (company_name, data)
+            VALUES (%s, %s)
+            ON CONFLICT (company_name)
+            DO UPDATE SET data = EXCLUDED.data;
+            """
+            cursor.execute(query, (company_name, json.dumps(data)))
+            conn.commit()
+            logger.info(
+                f"Data for company '{company_name}' inserted/updated successfully."
+            )
+    except Exception as e:
+        logger.error(f"Error inserting/updating data: {e}")
+    finally:
+        connection_pool.putconn(conn)
+
 
 def create_table():
     query = """
@@ -65,44 +103,38 @@ def create_table():
     except Exception as e:
         logger.error(f"Error inserting data: {e}")
 
-def insert_dataframe_to_db(df, table_name):
+
+def fetch_company_data(company_name):
     connection_pool = create_connection_pool()
-    if connection_pool:
-        conn = connection_pool.getconn()
-        try:
-            with conn.cursor() as cursor:
-                columns = df.columns.tolist()
-                values_placeholder = ", ".join(["%s"] * len(columns))
-                insert_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({values_placeholder})"
+    if not connection_pool:
+        logger.error("Connection pool not available.")
+        return None
 
-                for row in df.itertuples(index=False, name=None):
-                    cursor.execute(insert_query, row)
-                conn.commit()
-                print(f"Data inserted successfully into {table_name}!")
-        except Exception as e:
-            logger.error(f"Error inserting data: {e}")
-            conn.rollback()
-        finally:
-            connection_pool.putconn(conn)
+    conn = connection_pool.getconn()
+    try:
+        with conn.cursor() as cursor:
+            query = """
+            SELECT data
+            FROM company_data
+            WHERE company_name = %s;
+            """
+            cursor.execute(query, (company_name,))
+            result = cursor.fetchone()
+            if result:
+                logger.info(f"Data for company '{company_name}' fetched successfully.")
+                return json.loads(result[0])
+            else:
+                logger.warning(f"No data found for company '{company_name}'.")
+                return None
+    except Exception as e:
+        logger.error(f"Error fetching data: {e}")
+        return None
+    finally:
+        connection_pool.putconn(conn)
 
-# query = "SELECT * FROM your_table_name LIMIT 5;"
-# data = execute_query(query)
-# # if data:
-# #     print("Data from PostgreSQL:")
-# #     for row in data:
-# #         print(row)
 
-# data_frame = pd.DataFrame({
-#     'company_name': ['Apple', 'Microsoft', 'Google'],
-#     'revenue': [100000, 120000, 130000],
-#     'profit': [20000, 30000, 40000]
-# })
 
-# # Insert the data into the PostgreSQL table
-# insert_dataframe_to_db(data_frame, 'company_financials')
-# print("start table")
-# print(create_table())
 
-query = "SELECT * FROM company_data LIMIT 5;"
-data = execute_query(query)
-print(data)
+data = fetch_company_data("Apple")
+a, b, c = db_data_to_df(data)
+print(c)
