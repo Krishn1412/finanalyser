@@ -1,6 +1,42 @@
 import requests
 import pickle
 import base64
+from typing import List, Optional, Literal
+from langchain_core.language_models.chat_models import BaseChatModel
+
+from langgraph.graph import StateGraph, MessagesState, START, END
+from langgraph.types import Command
+from langchain_core.messages import HumanMessage, trim_messages
+
+
+def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:
+    options = ["FINISH"] + members
+    system_prompt = (
+        "You are a supervisor tasked with managing a conversation between the"
+        f" following workers: {members}. Given the following user request,"
+        " respond with the worker to act next. Each worker will perform a"
+        " task and respond with their results and status. When finished,"
+        " respond with FINISH."
+    )
+
+    class Router(TypedDict):
+        """Worker to route to next. If no workers needed, route to FINISH."""
+
+        next: Literal[*options]
+
+    def supervisor_node(state: MessagesState) -> Command[Literal[*members, "__end__"]]:
+        """An LLM-based router."""
+        messages = [
+            {"role": "system", "content": system_prompt},
+        ] + state["messages"]
+        response = llm.with_structured_output(Router).invoke(messages)
+        goto = response["next"]
+        if goto == "FINISH":
+            goto = END
+
+        return Command(goto=goto)
+
+    return supervisor_node
 
 
 def get_ticker(company_name):
@@ -17,10 +53,9 @@ def get_ticker(company_name):
 
 def df_to_base64(df):
     pickle_bytes = pickle.dumps(df)
-    base64_bytes = base64.b64encode(pickle_bytes).decode(
-        "utf-8"
-    )
+    base64_bytes = base64.b64encode(pickle_bytes).decode("utf-8")
     return base64_bytes
+
 
 def db_data_to_df(company_data):
     cash_flow_info = pickle.loads(base64.b64decode(company_data["cash_flow"]))

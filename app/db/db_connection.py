@@ -133,8 +133,6 @@ def fetch_company_data(company_name):
         connection_pool.putconn(conn)
 
 
-
-
 data = fetch_company_data("Apple")
 a, b, c = db_data_to_df(data)
 print(c)
