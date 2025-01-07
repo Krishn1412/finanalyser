@@ -30,4 +30,10 @@ def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervis
     )
 
 
-research_supervisor_node = make_supervisor_node(llm, ["search", "web_scraper"])
+research_supervisor_node = make_supervisor_node(llm, ["fetch financial data"])
+
+research_builder = StateGraph(MessagesState)
+research_builder.add_node("fetch financial data", fetch_financial_data_node)
+
+research_builder.add_edge(START, "supervisor")
+research_graph = research_builder.compile()
