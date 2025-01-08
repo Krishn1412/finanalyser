@@ -1,9 +1,9 @@
 import requests
 import pickle
 import base64
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, TypedDict
 from langchain_core.language_models.chat_models import BaseChatModel
-
+import pandas as pd
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, trim_messages
@@ -63,3 +63,17 @@ def db_data_to_df(company_data):
     financial_details_info = pickle.loads(base64.b64decode(company_data["financials"]))
 
     return cash_flow_info, balance_sheet_info, financial_details_info
+
+
+def merge_dataframes(df1, df2, df3):
+    common_columns = df1.columns.intersection(df2.columns).intersection(df3.columns)
+
+    df1 = df1[common_columns]
+    df2 = df2[common_columns]
+    df3 = df3[common_columns]
+
+    concatenated_df = pd.concat([df1, df2, df3])
+
+    concatenated_df = concatenated_df[~concatenated_df.index.duplicated(keep="first")]
+
+    return concatenated_df

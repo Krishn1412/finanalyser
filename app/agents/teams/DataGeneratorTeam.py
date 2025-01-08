@@ -12,9 +12,7 @@ from config import GOOGLE_API_KEY
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
 
 
-fetch_financial_details_agent = create_react_agent(
-    llm, tools=[fetch_financial_details()]
-)
+fetch_financial_details_agent = create_react_agent(llm, tools=[fetch_financial_details])
 
 
 def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervisor"]]:
