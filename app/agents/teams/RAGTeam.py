@@ -2,7 +2,7 @@ from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentType
 from langchain_experimental.agents import create_pandas_dataframe_agent
-from app.agents.utils import db_data_to_df
+from app.agents.utils import db_data_to_df, merge_dataframes
 from app.db.db_connection import fetch_company_data
 from config import GOOGLE_API_KEY
 
@@ -34,7 +34,15 @@ def create_pandas_agent(llm: LanguageModelLike, input):
     company_name = input["name"]
     data = fetch_company_data(company_name)
     cash_flow, balance_sheet, financials = db_data_to_df(data)
-
+    final_financial_info = merge_dataframes(cash_flow, balance_sheet, financials)
+    pandas_df_agent = create_pandas_dataframe_agent(
+        llm,
+        final_financial_info,
+        verbose=True,
+        agent_type=AgentType.OPENAI_FUNCTIONS,
+        handle_parsing_errors=True,
+    )
+    return pandas_df_agent
 
 def test_pandas(df):
     pandas_df_agent = create_pandas_agent(llm, df)
