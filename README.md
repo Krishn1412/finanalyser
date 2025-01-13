@@ -20,3 +20,4 @@ add option for the user to specify there own requirements for analysis using eng
 
 <img width="1230" alt="Screenshot 2025-01-02 at 1 12 46 PM" src="https://github.com/user-attachments/assets/058fddf1-6e07-4be6-8799-fa03380f2ce0" />
 
+add option to scrape the web for the comapny news and add it too.
