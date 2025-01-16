@@ -77,3 +77,9 @@ def merge_dataframes(df1, df2, df3):
     concatenated_df = concatenated_df[~concatenated_df.index.duplicated(keep="first")]
 
     return concatenated_df
+
+
+def load_yaml(file_path: str):
+    """Load a YAML file and return its content."""
+    with open(file_path, "r") as file:
+        return yaml.safe_load(file)
