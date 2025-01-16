@@ -7,6 +7,7 @@ import pandas as pd
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, trim_messages
+import yaml
 
 
 def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:

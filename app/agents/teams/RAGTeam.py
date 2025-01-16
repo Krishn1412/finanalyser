@@ -2,9 +2,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentType
 from langchain_experimental.agents import create_pandas_dataframe_agent
-from app.agents.utils import db_data_to_df, merge_dataframes
+from app.agents.utils import db_data_to_df, load_yaml, merge_dataframes
 from app.db.db_connection import fetch_company_data
 from config import GOOGLE_API_KEY
+from langchain_core.prompts import ChatPromptTemplate
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
 from typing import TypedDict, Sequence, Literal
@@ -60,9 +61,18 @@ def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         ),
         None,
     )
+    company_name = company_name_message.content if company_name_message else None
 
-    if not company_name_message:
-        raise ValueError("Company name not found in state messages")
+    human_question_message = next(
+        (msg for msg in state["messages"] if isinstance(msg, HumanMessage)),
+        None,
+    )
+    human_question = human_question_message.content if human_question_message else None
+
+    if not company_name:
+        raise ValueError("Company name is missing in the state messages.")
+    if not human_question:
+        raise ValueError("Human question is missing in the state messages.")
 
     company_name = company_name_message.content
     data = fetch_company_data(company_name)
@@ -71,8 +81,17 @@ def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     pandas_df_agent = create_pandas_agent(llm, final_financial_info)
 
     # get prompt
+    prompt_content = load_yaml("../prompts/RAGPrompt.yaml")
 
-    result = pandas_df_agent.invoke(state)
+    prompt = (
+        prompt_content.get("context", "")
+        + prompt_content.get("instructions", "")
+        + prompt_content.get("examples", "")
+    )
+
+    prompt_template = ChatPromptTemplate([("system", prompt), ("user", human_question)])
+    result = pandas_df_agent.invoke(prompt_template)
+
     return Command(
         update={
             "messages": [
