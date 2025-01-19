@@ -8,3 +8,4 @@ python-dotenv
 tabulate
 psycopg2-binary
 black
+IPython

@@ -20,7 +20,7 @@ def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervis
     return Command(
         update={
             "messages": [
-                HumanMessage(content=result["messages"][-1].content, name="web_scraper")
+                HumanMessage(content=result["messages"][-1].content, name="fetch_financial_data")
             ]
         },
         # We want our workers to ALWAYS "report back" to the supervisor when done
@@ -28,10 +28,3 @@ def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervis
     )
 
 
-research_supervisor_node = make_supervisor_node(llm, ["fetch financial data"])
-
-research_builder = StateGraph(MessagesState)
-research_builder.add_node("fetch financial data", fetch_financial_data_node)
-
-research_builder.add_edge(START, "supervisor")
-research_graph = research_builder.compile()
