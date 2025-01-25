@@ -53,26 +53,9 @@ def test_pandas(df):
 
 
 def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
-    company_name_message = next(
-        (
-            msg
-            for msg in state["messages"]
-            if isinstance(msg, SystemMessage) and msg.name == "company_name"
-        ),
-        None,
-    )
-    company_name = company_name_message.content if company_name_message else None
+    human_prompt = state['messages'][0].content
 
-    human_question_message = next(
-        (msg for msg in state["messages"] if isinstance(msg, HumanMessage)),
-        None,
-    )
-    human_question = human_question_message.content if human_question_message else None
-
-    if not company_name:
-        raise ValueError("Company name is missing in the state messages.")
-    if not human_question:
-        raise ValueError("Human question is missing in the state messages.")
+    
 
     company_name = company_name_message.content
     data = fetch_company_data(company_name)

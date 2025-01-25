@@ -1,29 +1,40 @@
 import requests
 import pickle
 import base64
-from typing import List, Optional, Literal, TypedDict
+from typing import List, Optional, Literal, TypedDict, Tuple
 from langchain_core.language_models.chat_models import BaseChatModel
+from pydantic import BaseModel, Field
 import pandas as pd
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, trim_messages
 import yaml
-
+from langchain_core.prompts import ChatPromptTemplate
 
 def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:
     options = ["FINISH"] + members
+
+    prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
+
     system_prompt = (
-        "You are a supervisor tasked with managing a conversation between the"
-        f" following workers: {members}. Given the following user request,"
-        " respond with the worker to act next. Each worker will perform a"
-        " task and respond with their results and status. When finished,"
-        " respond with FINISH."
+        prompt_content.get("context", "")
+        + prompt_content.get("instructions", "")
+        + str(prompt_content.get("examples", ""))
     )
 
-    class Router(TypedDict):
-        """Worker to route to next. If no workers needed, route to FINISH."""
+    # class Router(TypedDict):
+    #     """Worker to route to next. If no workers needed, route to FINISH."""
 
-        next: Literal[*options]
+    #     next: Literal[*options]
+
+    class Router(BaseModel):
+        """Route to the next role one of """ + ', '.join(options)
+        
+        worker: Literal[tuple(options)] = Field(
+            ...,
+            description="Next worker, one of " + ', '.join(options),
+        )
+
 
     def supervisor_node(state: MessagesState) -> Command[Literal[*members, "__end__"]]:
         """An LLM-based router."""
@@ -31,7 +42,7 @@ def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:
             {"role": "system", "content": system_prompt},
         ] + state["messages"]
         response = llm.with_structured_output(Router).invoke(messages)
-        goto = response["next"]
+        goto = response.worker
         if goto == "FINISH":
             goto = END
 

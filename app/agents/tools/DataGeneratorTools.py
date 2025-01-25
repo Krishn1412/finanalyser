@@ -33,8 +33,8 @@ def fetch_financial_details(
         # if not cash_flow_info:
         #     return {"error": "No financial information available."}
 
-        ans = test_pandas(financial_details_info)
-        print(ans)
+        # ans = test_pandas(financial_details_info)
+        # print(ans)
         company_data = {
             "cash_flow": df_to_base64(cash_flow_info),
             "balance_sheet": df_to_base64(balance_sheet_info),

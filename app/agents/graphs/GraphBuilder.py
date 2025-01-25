@@ -40,10 +40,19 @@ finalyser_graph = finalyser_builder.compile()
 for s in finalyser_graph.stream(
     {
         "messages": [
-            ("user", "Research AI agents and write a brief report about them.")
+            ("user", "What is the net revenue for APPLE this financial year?")
         ],
     },
     {"recursion_limit": 150},
 ):
     print(s)
     print("---")
+
+# s = finalyser_graph.stream(
+#     {
+#         "messages": [
+#             ("user", "fetch the finanical data for apple")
+#         ],
+#     }
+# )
+# print(s)
