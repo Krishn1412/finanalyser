@@ -4,6 +4,7 @@ import yfinance as yf
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
+from app.Session.RedisSessionManager import SessionManager
 from app.agents.teams.RAGTeam import test_pandas
 from app.agents.utils import df_to_base64, get_ticker
 from app.db.db_connection import insert_or_update_company_data
@@ -27,6 +28,14 @@ def fetch_financial_details(
         if not ticker_data:
             return {"error": "Company not found on Yahoo Finance."}
 
+        # Create a session to store the data 
+        session_manager = SessionManager(redis_host='localhost', redis_port=6379, session_ttl=3600)
+        session_data = {
+            "company_name": company_name
+        }
+        session_id = session_manager.create_session(session_data)
+        print(f"New session created: {session_id}")
+
         cash_flow_info = ticker_data.cash_flow
         balance_sheet_info = ticker_data.balance_sheet
         financial_details_info = ticker_data.financials
@@ -42,7 +51,7 @@ def fetch_financial_details(
         }
         company_data_json = json.dumps(company_data, indent=4)
         insert_or_update_company_data(company_name, company_data_json)
-        return financial_details_info
+        return financial_details_info, session_id
     except Exception as e:
         return {"error": f"Failed to fetch data: {repr(e)}"}
 

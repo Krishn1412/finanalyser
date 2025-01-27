@@ -9,3 +9,4 @@ tabulate
 psycopg2-binary
 black
 IPython
+redis

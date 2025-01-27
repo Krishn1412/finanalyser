@@ -55,9 +55,7 @@ def test_pandas(df):
 def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     human_prompt = state['messages'][0].content
 
-    
-
-    company_name = company_name_message.content
+    # company_name = company_name_message.content
     data = fetch_company_data(company_name)
     cash_flow, balance_sheet, financials = db_data_to_df(data)
     final_financial_info = merge_dataframes(cash_flow, balance_sheet, financials)

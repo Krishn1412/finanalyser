@@ -40,7 +40,7 @@ finalyser_graph = finalyser_builder.compile()
 for s in finalyser_graph.stream(
     {
         "messages": [
-            ("user", "What is the net revenue for APPLE this financial year?")
+            ("user", "Fetch the financial data of Amazon")
         ],
     },
     {"recursion_limit": 150},
