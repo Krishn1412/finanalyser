@@ -53,7 +53,7 @@ def test_pandas(df):
 
 
 def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
-    human_prompt = state['messages'][0].content
+    human_prompt = state["messages"][0].content
 
     # company_name = company_name_message.content
     data = fetch_company_data(company_name)
@@ -82,4 +82,3 @@ def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         # We want our workers to ALWAYS "report back" to the supervisor when done
         goto="supervisor",
     )
-

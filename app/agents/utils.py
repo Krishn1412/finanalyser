@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage, trim_messages
 import yaml
 from langchain_core.prompts import ChatPromptTemplate
 
+
 def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:
     options = ["FINISH"] + members
 
@@ -28,13 +29,12 @@ def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:
     #     next: Literal[*options]
 
     class Router(BaseModel):
-        """Route to the next role one of """ + ', '.join(options)
-        
+        """Route to the next role one of """ + ", ".join(options)
+
         worker: Literal[tuple(options)] = Field(
             ...,
-            description="Next worker, one of " + ', '.join(options),
+            description="Next worker, one of " + ", ".join(options),
         )
-
 
     def supervisor_node(state: MessagesState) -> Command[Literal[*members, "__end__"]]:
         """An LLM-based router."""

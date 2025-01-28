@@ -16,7 +16,9 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_K
 
 
 # Create data generator graph
-finalyser_supervisor_node = make_supervisor_node(llm, ["fetch_financial_data", "q_and_a"])
+finalyser_supervisor_node = make_supervisor_node(
+    llm, ["fetch_financial_data", "q_and_a"]
+)
 
 finalyser_builder = StateGraph(MessagesState)
 finalyser_builder.add_node("supervisor", finalyser_supervisor_node)
@@ -39,9 +41,7 @@ finalyser_graph = finalyser_builder.compile()
 
 for s in finalyser_graph.stream(
     {
-        "messages": [
-            ("user", "Fetch the financial data of Amazon")
-        ],
+        "messages": [("user", "Fetch the financial data of Amazon")],
     },
     {"recursion_limit": 150},
 ):

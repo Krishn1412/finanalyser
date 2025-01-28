@@ -104,6 +104,116 @@ def create_table():
         logger.error(f"Error inserting data: {e}")
 
 
+def create_user_session_table():
+    query = """
+        CREATE TABLE user_session (
+        user_id SERIAL PRIMARY KEY,
+        session_id VARCHAR(255),
+        UNIQUE (session_id)  -- Ensures each session_id is unique if provided
+        );
+    """
+    try:
+        connection_pool = create_connection_pool()
+        if connection_pool:
+            conn = connection_pool.getconn()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    conn.commit()  # Commit the transaction
+                    print("User session table created successfully.")
+            except Exception as e:
+                logger.error(f"Error creating user_session table: {e}")
+            finally:
+                connection_pool.putconn(conn)
+        else:
+            logger.error("Connection pool not available.")
+    except Exception as e:
+        logger.error(f"Error creating user_session table: {e}")
+
+
+def insert_user_session(user_id, session_id=None):
+    query = """
+        INSERT INTO user_session (user_id, session_id)
+        VALUES (%s, %s)
+        ON CONFLICT (user_id) DO NOTHING;  -- Prevents duplicate user_id entries
+    """
+    try:
+        connection_pool = create_connection_pool()
+        if connection_pool:
+            conn = connection_pool.getconn()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (user_id, session_id))
+                    conn.commit()
+                    print(
+                        f"User {user_id} with session {session_id} inserted successfully."
+                    )
+            except Exception as e:
+                logger.error(f"Error inserting user session: {e}")
+            finally:
+                connection_pool.putconn(conn)
+        else:
+            logger.error("Connection pool not available.")
+    except Exception as e:
+        logger.error(f"Error inserting user session: {e}")
+
+
+def remove_session_id(user_id):
+    query = """
+        UPDATE user_session
+        SET session_id = NULL
+        WHERE user_id = %s;
+    """
+    try:
+        connection_pool = create_connection_pool()
+        if connection_pool:
+            conn = connection_pool.getconn()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (user_id,))
+                    conn.commit()
+                    print(f"Session ID removed for user_id: {user_id}")
+            except Exception as e:
+                logger.error(f"Error removing session ID: {e}")
+            finally:
+                connection_pool.putconn(conn)
+        else:
+            logger.error("Connection pool not available.")
+    except Exception as e:
+        logger.error(f"Error in remove_session_id: {e}")
+
+
+def fetch_session_id(user_id):
+    query = """
+        SELECT session_id
+        FROM user_session
+        WHERE user_id = %s;
+    """
+    try:
+        connection_pool = create_connection_pool()
+        if connection_pool:
+            conn = connection_pool.getconn()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (user_id,))
+                    result = cursor.fetchone()
+                    if result:
+                        session_id = result[0]
+                        print(f"Session ID for user_id {user_id}: {session_id}")
+                        return session_id
+                    else:
+                        print(f"No session ID found for user_id: {user_id}")
+                        return None
+            except Exception as e:
+                logger.error(f"Error fetching session ID: {e}")
+            finally:
+                connection_pool.putconn(conn)
+        else:
+            logger.error("Connection pool not available.")
+    except Exception as e:
+        logger.error(f"Error in fetch_session_id: {e}")
+
+
 def fetch_company_data(company_name):
     connection_pool = create_connection_pool()
     if not connection_pool:

@@ -20,11 +20,11 @@ def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervis
     return Command(
         update={
             "messages": [
-                HumanMessage(content=result["messages"][-1].content, name="fetch_financial_data")
+                HumanMessage(
+                    content=result["messages"][-1].content, name="fetch_financial_data"
+                )
             ]
         },
         # We want our workers to ALWAYS "report back" to the supervisor when done
         goto="supervisor",
     )
-
-

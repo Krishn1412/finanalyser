@@ -2,10 +2,13 @@ import redis
 import json
 import uuid
 
+
 class SessionManager:
-    def __init__(self, redis_host='localhost', redis_port=6379, session_ttl=3600):
-        self.redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
-        self.session_ttl = session_ttl  
+    def __init__(self, redis_host="localhost", redis_port=6379, session_ttl=3600):
+        self.redis_client = redis.Redis(
+            host=redis_host, port=redis_port, decode_responses=True
+        )
+        self.session_ttl = session_ttl
 
     def generate_session_id(self):
         """Generate a unique session ID."""

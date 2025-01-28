@@ -28,11 +28,11 @@ def fetch_financial_details(
         if not ticker_data:
             return {"error": "Company not found on Yahoo Finance."}
 
-        # Create a session to store the data 
-        session_manager = SessionManager(redis_host='localhost', redis_port=6379, session_ttl=3600)
-        session_data = {
-            "company_name": company_name
-        }
+        # Create a session to store the data
+        session_manager = SessionManager(
+            redis_host="localhost", redis_port=6379, session_ttl=3600
+        )
+        session_data = {"company_name": company_name}
         session_id = session_manager.create_session(session_data)
         print(f"New session created: {session_id}")
 
