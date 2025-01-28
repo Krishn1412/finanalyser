@@ -106,8 +106,9 @@ def create_table():
 
 def create_user_session_table():
     query = """
+        DROP TABLE IF EXISTS user_session;  -- Delete the table if it exists
         CREATE TABLE user_session (
-        user_id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) PRIMARY KEY,  -- user_id as a string
         session_id VARCHAR(255),
         UNIQUE (session_id)  -- Ensures each session_id is unique if provided
         );
@@ -131,11 +132,12 @@ def create_user_session_table():
         logger.error(f"Error creating user_session table: {e}")
 
 
-def insert_user_session(user_id, session_id=None):
+def insert_or_update_user_session(user_id, session_id=None):
     query = """
         INSERT INTO user_session (user_id, session_id)
         VALUES (%s, %s)
-        ON CONFLICT (user_id) DO NOTHING;  -- Prevents duplicate user_id entries
+        ON CONFLICT (user_id)
+        DO UPDATE SET session_id = EXCLUDED.session_id;  -- Update session_id on conflict
     """
     try:
         connection_pool = create_connection_pool()
@@ -146,16 +148,16 @@ def insert_user_session(user_id, session_id=None):
                     cursor.execute(query, (user_id, session_id))
                     conn.commit()
                     print(
-                        f"User {user_id} with session {session_id} inserted successfully."
+                        f"User {user_id} updated with new session {session_id} successfully."
                     )
             except Exception as e:
-                logger.error(f"Error inserting user session: {e}")
+                logger.error(f"Error inserting or updating user session: {e}")
             finally:
                 connection_pool.putconn(conn)
         else:
             logger.error("Connection pool not available.")
     except Exception as e:
-        logger.error(f"Error inserting user session: {e}")
+        logger.error(f"Error in insert_or_update_user_session: {e}")
 
 
 def remove_session_id(user_id):
@@ -246,3 +248,5 @@ def fetch_company_data(company_name):
 # data = fetch_company_data("Apple")
 # a, b, c = db_data_to_df(data)
 # print(c)
+
+# create_user_session_table()

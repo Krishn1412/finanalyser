@@ -7,7 +7,10 @@ import json
 from app.Session.RedisSessionManager import SessionManager
 from app.agents.teams.RAGTeam import test_pandas
 from app.agents.utils import df_to_base64, get_ticker
-from app.db.db_connection import insert_or_update_company_data
+from app.db.db_connection import (
+    insert_or_update_company_data,
+    insert_or_update_user_session,
+)
 
 
 _TEMP_DIRECTORY = TemporaryDirectory()
@@ -16,7 +19,8 @@ WORKING_DIRECTORY = Path(_TEMP_DIRECTORY.name)
 
 @tool
 def fetch_financial_details(
-    company_name: Annotated[str, "Name of the company to fetch finance details for."]
+    company_name: Annotated[str, "Name of the company to fetch finance details for."],
+    user_id: Annotated[str, "User ID for the use currently using the agent."],
 ) -> Annotated[Dict[str, str], "Dictionary of finance details."]:
     """Fetch financial details of a given company using yfinance."""
     try:
@@ -36,14 +40,13 @@ def fetch_financial_details(
         session_id = session_manager.create_session(session_data)
         print(f"New session created: {session_id}")
 
+        # Store session id in the database
+        insert_or_update_user_session(user_id, session_id)
+
         cash_flow_info = ticker_data.cash_flow
         balance_sheet_info = ticker_data.balance_sheet
         financial_details_info = ticker_data.financials
-        # if not cash_flow_info:
-        #     return {"error": "No financial information available."}
 
-        # ans = test_pandas(financial_details_info)
-        # print(ans)
         company_data = {
             "cash_flow": df_to_base64(cash_flow_info),
             "balance_sheet": df_to_base64(balance_sheet_info),
@@ -51,7 +54,7 @@ def fetch_financial_details(
         }
         company_data_json = json.dumps(company_data, indent=4)
         insert_or_update_company_data(company_name, company_data_json)
-        return financial_details_info, session_id
+        return financial_details_info
     except Exception as e:
         return {"error": f"Failed to fetch data: {repr(e)}"}
 

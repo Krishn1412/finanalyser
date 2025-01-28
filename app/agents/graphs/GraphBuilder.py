@@ -41,7 +41,7 @@ finalyser_graph = finalyser_builder.compile()
 
 for s in finalyser_graph.stream(
     {
-        "messages": [("user", "Fetch the financial data of Amazon")],
+        "messages": [("user", "Answer me the question, what is the net revenue of Amazon, user_id is anon_11")],
     },
     {"recursion_limit": 150},
 ):
@@ -56,3 +56,5 @@ for s in finalyser_graph.stream(
 #     }
 # )
 # print(s)
+# Answer me the question, what is the net revenue of Amazon, user_id is anon_11
+# Fetch the financial data of Amazon, user_id is anon_11

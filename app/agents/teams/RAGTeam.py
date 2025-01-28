@@ -2,10 +2,12 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentType
 from langchain_experimental.agents import create_pandas_dataframe_agent
+from app.Session.RedisSessionManager import SessionManager
 from app.agents.utils import db_data_to_df, load_yaml, merge_dataframes
-from app.db.db_connection import fetch_company_data
+from app.db.db_connection import fetch_company_data, fetch_session_id
 from config import GOOGLE_API_KEY
 from langchain_core.prompts import ChatPromptTemplate
+from langgraph.prebuilt import create_react_agent
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
 from typing import TypedDict, Sequence, Literal
@@ -21,6 +23,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from app.agents.utils import make_supervisor_node
+from app.agents.tools.RAGTools import q_and_a_utils
 
 
 class AgentState(TypedDict):
@@ -52,13 +55,11 @@ def test_pandas(df):
     )
 
 
-def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
-    human_prompt = state["messages"][0].content
+q_and_a_util_agent = create_react_agent(llm, tools=[q_and_a_utils])
 
-    # company_name = company_name_message.content
-    data = fetch_company_data(company_name)
-    cash_flow, balance_sheet, financials = db_data_to_df(data)
-    final_financial_info = merge_dataframes(cash_flow, balance_sheet, financials)
+
+def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+    final_financial_info, human_prompt = q_and_a_util_agent.invoke(state)
     pandas_df_agent = create_pandas_agent(llm, final_financial_info)
 
     # get prompt
@@ -70,7 +71,7 @@ def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         + prompt_content.get("examples", "")
     )
 
-    prompt_template = ChatPromptTemplate([("system", prompt), ("user", human_question)])
+    prompt_template = ChatPromptTemplate([("system", prompt), ("user", human_prompt)])
     result = pandas_df_agent.invoke(prompt_template)
 
     return Command(
