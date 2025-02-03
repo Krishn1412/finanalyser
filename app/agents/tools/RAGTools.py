@@ -4,10 +4,11 @@ from app.agents.utils import db_data_to_df, merge_dataframes
 from app.db.db_connection import fetch_company_data, fetch_session_id
 from langchain_core.tools import tool
 
+
 @tool
 def q_and_a_utils(
     human_prompt: Annotated[
-        str, "The question that human is aksing apart from the user ID"
+        str, "The question that human is asking apart from the user ID"
     ],
     user_id: Annotated[str, "User ID for the use currently using the agent."],
 ) -> Annotated[str, str, "financial info and the human prompt"]:

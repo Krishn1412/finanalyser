@@ -1,18 +1,33 @@
-from typing import List, Optional, Literal
+from typing import Annotated, List, Optional, Literal, Sequence, TypedDict
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, trim_messages
 from app.agents.teams.DataGeneratorTeam import fetch_financial_data_node
+from app.agents.teams.DocumentAnalysisTeam import (
+    agent_node,
+    generate_answer_node,
+    rewrite_query_node,
+)
 from app.agents.teams.RAGTeam import q_and_a_node
 from app.agents.tools.DataGeneratorTools import fetch_financial_details
+from app.agents.tools.DocumentAnalysisTools import call_document_analysis
 from app.agents.utils import make_supervisor_node
 from config import GOOGLE_API_KEY
 from IPython.display import Image, display
 import os
+from langgraph.prebuilt import tools_condition, ToolNode
+from langgraph.graph.message import add_messages
+from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage, SystemMessage
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
+
+
+class AgentState(TypedDict):
+    # The add_messages function defines how an update should be processed
+    # Default is to replace. add_messages says "append"
+    messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
 # Create data generator graph
@@ -29,6 +44,52 @@ finalyser_builder.add_edge(START, "supervisor")
 finalyser_graph = finalyser_builder.compile()
 
 
+# Document Anlysis graph builder:
+pdf_filename = "test.pdf"
+retriever_tool = call_document_analysis(pdf_filename)
+
+workflow = StateGraph(AgentState)
+
+# Define the nodes we will cycle between
+workflow.add_node("agent", agent_node)  # agent
+retrieve = ToolNode([retriever_tool])
+workflow.add_node("retrieve", retrieve)  # retrieval
+workflow.add_node("rewrite", rewrite_query_node)  # Re-writing the question
+workflow.add_node(
+    "generate", generate_answer_node
+)  # Generating a response after we know the documents are relevant
+# Call agent node to decide to retrieve or not
+workflow.add_edge(START, "agent")
+
+# Decide whether to retrieve
+workflow.add_conditional_edges(
+    "agent",
+    # Assess agent decision
+    tools_condition,
+    {
+        # Translate the condition outputs to nodes in our graph
+        "tools": "retrieve",
+        END: END,
+    },
+)
+
+# Edges taken after the `action` node is called.
+workflow.add_conditional_edges("retrieve")
+workflow.add_edge("generate", END)
+workflow.add_edge("rewrite", "agent")
+
+# Compile
+graph = workflow.compile()
+
+
+from IPython.display import Image, display
+
+try:
+    display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
+except Exception:
+    # This requires some extra dependencies and is optional
+    pass
+
 # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
 # image_bytes = finalyser_graph.get_graph().draw_mermaid_png()
 
@@ -41,7 +102,12 @@ finalyser_graph = finalyser_builder.compile()
 
 for s in finalyser_graph.stream(
     {
-        "messages": [("user", "Answer me the question, what is the net revenue of Amazon, user_id is anon_11")],
+        "messages": [
+            (
+                "user",
+                "Answer me the question, what is the net revenue of Amazon, user_id is anon_11",
+            )
+        ],
     },
     {"recursion_limit": 150},
 ):
