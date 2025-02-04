@@ -10,6 +10,9 @@ from app.agents.teams.DocumentAnalysisTeam import (
     generate_answer_node,
     rewrite_query_node,
 )
+from pathlib import Path
+import asyncio
+import PIL.Image
 from app.agents.teams.RAGTeam import q_and_a_node
 from app.agents.tools.DataGeneratorTools import fetch_financial_details
 from app.agents.tools.DocumentAnalysisTools import call_document_analysis
@@ -22,7 +25,10 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage, SystemMessage
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
+PDF_STORAGE_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "pdfs"
 
+# Ensure PDF storage directory exists
+PDF_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 class AgentState(TypedDict):
     # The add_messages function defines how an update should be processed
@@ -45,14 +51,14 @@ finalyser_graph = finalyser_builder.compile()
 
 
 # Document Anlysis graph builder:
-pdf_filename = "test.pdf"
-retriever_tool = call_document_analysis(pdf_filename)
+pdf_filename = PDF_STORAGE_DIR / "test.pdf"
+retriever_tool = asyncio.run(call_document_analysis(pdf_filename))
 
 workflow = StateGraph(AgentState)
 
 # Define the nodes we will cycle between
 workflow.add_node("agent", agent_node)  # agent
-retrieve = ToolNode([retriever_tool])
+retrieve = ToolNode(retriever_tool)
 workflow.add_node("retrieve", retrieve)  # retrieval
 workflow.add_node("rewrite", rewrite_query_node)  # Re-writing the question
 workflow.add_node(
@@ -84,35 +90,35 @@ graph = workflow.compile()
 
 from IPython.display import Image, display
 
-try:
-    display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
-except Exception:
-    # This requires some extra dependencies and is optional
-    pass
+# try:
+#     display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
+# except Exception:
+#     # This requires some extra dependencies and is optional
+#     pass
 
 # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
-# image_bytes = finalyser_graph.get_graph().draw_mermaid_png()
+image_bytes = graph.get_graph().draw_mermaid_png()
 
 
-# with open("output_image.png", "wb") as f:
-#     f.write(image_bytes)
+with open("output_image.png", "wb") as f:
+    f.write(image_bytes)
 
-# import os
-# os.system("open output_image.png")
+import os
+os.system("open output_image.png")
 
-for s in finalyser_graph.stream(
-    {
-        "messages": [
-            (
-                "user",
-                "Answer me the question, what is the net revenue of Amazon, user_id is anon_11",
-            )
-        ],
-    },
-    {"recursion_limit": 150},
-):
-    print(s)
-    print("---")
+# for s in finalyser_graph.stream(
+#     {
+#         "messages": [
+#             (
+#                 "user",
+#                 "Answer me the question, what is the net revenue of Amazon, user_id is anon_11",
+#             )
+#         ],
+#     },
+#     {"recursion_limit": 150},
+# ):
+#     print(s)
+#     print("---")
 
 # s = finalyser_graph.stream(
 #     {

@@ -7,7 +7,6 @@ from io import BytesIO
 
 import google.generativeai as genai
 import pypdfium2 as pdfium
-from PIL import Image
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import CharacterTextSplitter
@@ -18,7 +17,7 @@ from config import GOOGLE_API_KEY
 
 # Configure Gemini API
 genai.configure(api_key=GOOGLE_API_KEY)
-MODEL = "gemini-pro-vision"
+MODEL = "gemini-1.5-pro"
 
 
 async def parse_page_with_gemini(base64_image: str) -> str:
@@ -28,10 +27,20 @@ async def parse_page_with_gemini(base64_image: str) -> str:
     model = genai.GenerativeModel(MODEL)
     image_data = base64.b64decode(base64_image)
 
+    image_data = {
+        "mime_type": "image/jpeg",
+        "data": image_data
+    }
+
+    # Generate content
     response = model.generate_content(
-        ["Extract information from this image into text:"],
-        stream=False,
-        image=image_data,
+        contents=[
+            {"role": "user", "parts": [
+                {"text": "Extract information from this image into text:"},
+                {"inline_data": image_data}
+            ]}
+        ],
+        stream=False
     )
 
     return response.text.strip() if response.text else ""
@@ -104,7 +113,7 @@ def process_and_store_text(
 
 
 async def call_document_analysis(pdf_filename):
-    docs_list = await document_analysis(pdf_filename)
+    docs_list = await document_analysis(str(pdf_filename))
     retriever = process_and_store_text(docs_list)
 
     # Create retriever tool

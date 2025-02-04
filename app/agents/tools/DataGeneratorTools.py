@@ -5,7 +5,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
 from app.Session.RedisSessionManager import SessionManager
-from app.agents.teams.RAGTeam import test_pandas
 from app.agents.utils import df_to_base64, get_ticker
 from app.db.db_connection import (
     insert_or_update_company_data,
