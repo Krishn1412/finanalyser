@@ -12,3 +12,4 @@ IPython
 redis
 pypdfium2
 pillow
+faiss-cpu

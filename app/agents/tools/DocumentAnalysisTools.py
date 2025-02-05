@@ -101,12 +101,12 @@ def process_and_store_text(
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=500)
     doc_splits = text_splitter.split_documents(data)
 
-    # Use Google's `text-embedding-gecko` for embeddings
-    embedding_model = genai.GenerativeModel("text-embedding-gecko")
-    embeddings = [embedding_model.embed([doc.page_content])[0] for doc in doc_splits]
+    # Use Google's `ttext-embedding-004` for embeddings
+    embeddings = [genai.embed_content(model="models/text-embedding-004", content=[doc.page_content]) for doc in doc_splits]
 
     # Store in FAISS
-    faiss_db = FAISS.from_embeddings(embeddings, doc_splits)
+    text_embedding_pairs = zip(doc_splits, embeddings)
+    faiss_db = FAISS.from_embeddings(text_embedding_pairs, embeddings)
     faiss_db.save_local(faiss_db_path)
 
     return faiss_db.as_retriever(search_type="similarity", search_kwargs={"k": 4})
