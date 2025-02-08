@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 from io import BytesIO
-
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
 import pypdfium2 as pdfium
 from langchain_community.vectorstores import FAISS
@@ -12,6 +12,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain.tools.retriever import create_retriever_tool
 from langchain_core.prompts import PromptTemplate
+from PyPDF2 import PdfReader
 from langchain_core.output_parsers import StrOutputParser
 from config import GOOGLE_API_KEY
 
@@ -45,6 +46,13 @@ async def parse_page_with_gemini(base64_image: str) -> str:
 
     return response.text.strip() if response.text else ""
 
+def get_pdf_text(filepath):
+    text = " "
+    pdf_reader = PdfReader(filepath)
+    for page in pdf_reader.pages:
+        text += page.extract_text()
+
+    return text
 
 async def document_analysis(filename: str) -> list:
     """
@@ -101,19 +109,17 @@ def process_and_store_text(
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=500)
     doc_splits = text_splitter.split_documents(data)
 
-    # Use Google's `ttext-embedding-004` for embeddings
-    embeddings = [genai.embed_content(model="models/text-embedding-004", content=[doc.page_content]) for doc in doc_splits]
-
     # Store in FAISS
-    text_embedding_pairs = zip(doc_splits, embeddings)
-    faiss_db = FAISS.from_embeddings(text_embedding_pairs, embeddings)
+
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    faiss_db = FAISS.from_texts(data[0].page_content, embedding=embeddings)
     faiss_db.save_local(faiss_db_path)
 
     return faiss_db.as_retriever(search_type="similarity", search_kwargs={"k": 4})
 
 
-async def call_document_analysis(pdf_filename):
-    docs_list = await document_analysis(str(pdf_filename))
+def call_document_analysis(pdf_filename):
+    docs_list = get_pdf_text(str(pdf_filename))
     retriever = process_and_store_text(docs_list)
 
     # Create retriever tool
