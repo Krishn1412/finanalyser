@@ -46,17 +46,23 @@ retriever_tool = DocumentRetriever.get_retriever(pdf_filename)
 
 def agent_node(state: MessagesState):
     """
-    Invokes the agent model to generate a response based on the current state.
+    Invokes the agent model to generate a response based on the current state. Given
+    the question, it will decide to retrieve using the retriever tool, or simply end.
+
+    Args:
+        state (messages): The current state
+
+    Returns:
+        dict: The updated state with the agent response appended to messages
     """
     print("---CALL AGENT---")
     messages = state["messages"]
 
-    llm = ChatVertexAI(model="gemini-pro")
     llm_with_tools = llm.bind_tools(retriever_tool)
     response = llm_with_tools.invoke(messages)
     return Command(
         update={
-            "messages": [HumanMessage(content=response.text, name="agent_response")]
+            "messages": [HumanMessage(content=response.content, name="agent_response")]
         }
     )
 

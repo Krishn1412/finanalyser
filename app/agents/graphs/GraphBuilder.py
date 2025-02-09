@@ -59,6 +59,9 @@ class AgentState(TypedDict):
 workflow = StateGraph(AgentState)
 
 # Define the nodes we will cycle between
+data_ingestion_supervisor_node = make_supervisor_node(
+    llm, ["retrieve", "rewrite", "generate"]
+)
 workflow.add_node("supervisor", agent_node)  # agent
 retrieve = ToolNode(retriever_tool)
 workflow.add_node("retrieve", retrieve)  # retrieval
@@ -124,10 +127,10 @@ graph = workflow.compile()
 #     print(s)
 #     print("---")
 
-# s = finalyser_graph.stream(
+# s = graph.stream(
 #     {
 #         "messages": [
-#             ("user", "fetch the finanical data for apple")
+#             ("user", "What is the profit before tax for 2021?")
 #         ],
 #     }
 # )

@@ -47,7 +47,7 @@ async def parse_page_with_gemini(base64_image: str) -> str:
     return response.text.strip() if response.text else ""
 
 def get_pdf_text(filepath):
-    text = " "
+    text = ""
     pdf_reader = PdfReader(filepath)
     for page in pdf_reader.pages:
         text += page.extract_text()
