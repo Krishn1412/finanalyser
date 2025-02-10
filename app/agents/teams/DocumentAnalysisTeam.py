@@ -1,3 +1,4 @@
+from app.agents.tools.DocumentAnalysisTools import document_ingestion, document_retrieval
 from config import GOOGLE_API_KEY
 import os
 from pathlib import Path
@@ -21,174 +22,40 @@ from langgraph.types import Command
 from langchain_core.language_models.base import LanguageModelLike
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
-from app.agents.utils import DocumentRetriever, load_yaml, make_supervisor_node
+from app.agents.utils import load_yaml, make_supervisor_node
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
-# Configure Gemini API
-genai.configure(api_key=GOOGLE_API_KEY)
-
-MODEL = "gemini-1.5-pro"
 
 
-def create_gemini_agent():
-    model = genai.GenerativeModel(MODEL)
-    return model
+document_ingestion_agent = create_react_agent(llm, tools=[document_ingestion])
 
+document_retreival_agent = create_react_agent(llm, tools=[document_retrieval])
 
-gemini_agent = create_gemini_agent()
-PDF_STORAGE_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "pdfs"
-
-# Ensure PDF storage directory exists
-PDF_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-pdf_filename = PDF_STORAGE_DIR / "1.pdf"
-
-retriever_tool = DocumentRetriever.get_retriever(pdf_filename)
-
-def agent_node(state: MessagesState):
-    """
-    Invokes the agent model to generate a response based on the current state. Given
-    the question, it will decide to retrieve using the retriever tool, or simply end.
-
-    Args:
-        state (messages): The current state
-
-    Returns:
-        dict: The updated state with the agent response appended to messages
-    """
-    print("---CALL AGENT---")
-    messages = state["messages"]
-
-    llm_with_tools = llm.bind_tools(retriever_tool)
-    response = llm_with_tools.invoke(messages)
+def document_ingestion_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+    result = document_ingestion_agent.invoke(state)
     return Command(
         update={
-            "messages": [HumanMessage(content=response.content, name="agent_response")]
-        }
+            "messages": [
+                HumanMessage(
+                    content=result["messages"][-1].content, name="fetch_financial_data"
+                )
+            ]
+        },
+        # We want our workers to ALWAYS "report back" to the supervisor when done
+        goto="supervisor",
     )
 
-
-def rewrite_query_node(state: MessagesState):
-    """
-    Transforms the query to produce a better question.
-    """
-    print("---TRANSFORM QUERY---")
-    messages = state["messages"]
-    question = messages[0].content
-
-    prompt = f"""
-    Look at the input and try to reason about the underlying semantic intent/meaning.
-    Here is the initial question:
-    -------
-    {question}
-    -------
-    Reformulate an improved question:
-    """
-
-    response = gemini_agent.generate_content([prompt], stream=False)
-
+def document_retreival_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+    result = document_retreival_agent.invoke(state)
     return Command(
         update={
-            "messages": [HumanMessage(content=response.text, name="rewritten_query")]
-        }
+            "messages": [
+                HumanMessage(
+                    content=result["messages"][-1].content, name="fetch_financial_data"
+                )
+            ]
+        },
+        # We want our workers to ALWAYS "report back" to the supervisor when done
+        goto="supervisor",
     )
 
-
-def generate_answer_node(state: MessagesState):
-    """
-    Generates an answer using retrieved context.
-    """
-    print("---GENERATE ANSWER---")
-    messages = state["messages"]
-    question = messages[0].content
-    last_message = messages[-1]
-
-    docs = last_message.content
-
-    # Formatting the context
-    formatted_context = "\n\n".join(doc.page_content for doc in docs)
-
-    prompt = f"""
-    Use the provided context to generate an insightful answer.
-
-    Context:
-    {formatted_context}
-
-    Question:
-    {question}
-
-    Answer:
-    """
-
-    response = gemini_agent.generate_content([prompt], stream=False)
-
-    return Command(
-        update={
-            "messages": [HumanMessage(content=response.text, name="generated_answer")]
-        }
-    )
-
-
-import google.generativeai as genai
-from typing import Literal
-from pydantic import BaseModel, Field
-
-
-
-def grade_documents(state) -> Literal["generate", "rewrite"]:
-    """
-    Determines whether the retrieved documents are relevant to the question.
-
-    Args:
-        state (messages): The current state
-
-    Returns:
-        str: A decision for whether the documents are relevant or not
-    """
-
-    print("---CHECK RELEVANCE---")
-
-    # Data model for response validation
-    class Grade(BaseModel):
-        """Binary score for relevance check."""
-        binary_score: str = Field(description="Relevance score 'yes' or 'no'")
-
-    # LLM Model
-    model = genai.GenerativeModel("gemini-pro")  # Use Gemini-Pro model
-
-    # Extract messages
-    messages = state["messages"]
-    last_message = messages[-1]
-
-    question = messages[0].content
-    docs = last_message.content
-
-    print("question:", question)
-    print("context:", docs)
-
-    # Prompt
-    prompt = f"""You are a grader assessing the relevance of a retrieved document to a user question.
-
-    Here is the retrieved document:
-    {docs}
-
-    Here is the user question:
-    {question}
-
-    If the document contains keyword(s) related to the question, grade it as relevant.
-    Respond with a binary score: 'yes' if relevant, 'no' otherwise.
-    """
-
-    # Get response from Gemini
-    response = model.generate_content(prompt)
-
-    # Extracting the score (Ensure it's clean)
-    score = response.text.strip().lower()
-
-    if score.startswith("yes"):
-        print("---DECISION: DOCS RELEVANT---")
-        return "generate"
-
-    else:
-        print("---DECISION: DOCS NOT RELEVANT---")
-        print(score)
-        return "rewrite"

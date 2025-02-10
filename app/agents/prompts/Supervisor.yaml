@@ -12,12 +12,15 @@ context: |
   - If the prompt clearly aligns with a worker’s function, route the request to that worker.
   - If multiple workers could be relevant, determine the best-suited worker based on the task context.
   - If no further workers are needed or all tasks are completed, respond with "FINISH."
+  - Once a worker has returned an answer, determine whether additional processing is required.
+  - If no further actions are necessary, immediately transition to "FINISH."
 
 instructions: |
   - Analyze the user’s request and determine the most relevant worker.
   - If the request requires a specific worker’s action, route the request accordingly.
   - If multiple workers are involved, prioritize based on task dependencies.
   - If no tasks remain, respond with "FINISH."
+  - Once a worker has responded, check if further processing is needed. If not, move to "FINISH."
   - Provide clear reasoning for your decision in the output.
 
 examples:
@@ -32,3 +35,7 @@ examples:
 
   - question: Finish the process.
     answer: "FINISH."
+
+  - question: Summarize the extracted financial report.
+    answer: Call `summarization_worker`, then move to "FINISH."
+

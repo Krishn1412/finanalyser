@@ -6,18 +6,15 @@ from langgraph.types import Command
 from langchain_core.messages import HumanMessage, trim_messages
 from app.agents.teams.DataGeneratorTeam import fetch_financial_data_node
 from app.agents.teams.DocumentAnalysisTeam import (
-    agent_node,
-    generate_answer_node,
-    grade_documents,
-    rewrite_query_node,
+    document_ingestion_node,
+    document_retreival_node,
 )
 from pathlib import Path
 import asyncio
 import PIL.Image
 from app.agents.teams.RAGTeam import q_and_a_node
 from app.agents.tools.DataGeneratorTools import fetch_financial_details
-from app.agents.tools.DocumentAnalysisTools import call_document_analysis
-from app.agents.utils import DocumentRetriever, make_supervisor_node
+from app.agents.utils import make_supervisor_node
 from config import GOOGLE_API_KEY
 from IPython.display import Image, display
 import os
@@ -31,7 +28,7 @@ PDF_STORAGE_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "pdfs
 # Ensure PDF storage directory exists
 PDF_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 pdf_filename = PDF_STORAGE_DIR / "1.pdf"
-retriever_tool = DocumentRetriever.get_retriever(pdf_filename)
+# retriever_tool = DocumentRetriever.get_retriever(pdf_filename)
 class AgentState(TypedDict):
     # The add_messages function defines how an update should be processed
     # Default is to replace. add_messages says "append"
@@ -60,36 +57,14 @@ workflow = StateGraph(AgentState)
 
 # Define the nodes we will cycle between
 data_ingestion_supervisor_node = make_supervisor_node(
-    llm, ["retrieve", "rewrite", "generate"]
+    llm, ["data_ingestion", "data_retrieval"]
 )
-workflow.add_node("supervisor", agent_node)  # agent
-retrieve = ToolNode(retriever_tool)
-workflow.add_node("retrieve", retrieve)  # retrieval
-workflow.add_node("rewrite", rewrite_query_node)  # Re-writing the question
-workflow.add_node(
-    "generate", generate_answer_node
-)  # Generating a response after we know the documents are relevant
+workflow.add_node("supervisor", data_ingestion_supervisor_node)  
+workflow.add_node("data_ingestion", document_ingestion_node)  
+workflow.add_node("data_retrieval", document_retreival_node)  
+
 # Call agent node to decide to retrieve or not
 workflow.add_edge(START, "supervisor")
-
-# Decide whether to retrieve
-workflow.add_conditional_edges(
-    "supervisor",
-    # Assess agent decision
-    tools_condition,
-    {
-        # Translate the condition outputs to nodes in our graph
-        "tools": "retrieve",
-        END: END,
-    },
-)
-
-# Edges taken after the `action` node is called.
-workflow.add_conditional_edges("retrieve",
-    # Assess agent decision
-    grade_documents,)
-workflow.add_edge("generate", END)
-workflow.add_edge("rewrite", "supervisor")
 
 # Compile
 graph = workflow.compile()
@@ -141,9 +116,7 @@ import pprint
 
 inputs = {
     "messages": [
-        ("user", """
-        What is the Profit before tax for 2021?
-        """),
+        ("user", "What is the profit before tax for 2021?"),
     ]
 }
 for output in graph.stream(inputs):
@@ -152,3 +125,6 @@ for output in graph.stream(inputs):
         pprint.pprint("---")
         pprint.pprint(value, indent=2, width=80, depth=None)
     pprint.pprint("\n---\n")
+
+# f"Ingest the document present at {pdf_filename}"
+# "What is the profit before tax for 2021?"

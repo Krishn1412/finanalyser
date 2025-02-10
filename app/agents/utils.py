@@ -96,20 +96,20 @@ def load_yaml(file_path: str):
     with open(file_path, "r") as file:
         return yaml.safe_load(file)
 
-class DocumentRetriever:
+# class DocumentRetriever:
     
-    _retrievers = {}  # Dictionary to store filename-retriever mapping
+#     _retrievers = {}  # Dictionary to store filename-retriever mapping
 
-    @classmethod
-    def get_retriever(cls, filename):
-        """Returns an existing FAISS retriever if it exists, else creates a new one."""
-        if filename in cls._retrievers:
-            print(f"Retriever for '{filename}' already exists. Returning existing retriever.")
-            return cls._retrievers[filename]
+#     @classmethod
+#     def get_retriever(cls, filename):
+#         """Returns an existing FAISS retriever if it exists, else creates a new one."""
+#         if filename in cls._retrievers:
+#             print(f"Retriever for '{filename}' already exists. Returning existing retriever.")
+#             return cls._retrievers[filename]
 
-        # Create FAISS retriever for the new filename
-        from app.agents.tools.DocumentAnalysisTools import call_document_analysis
-        retriever = call_document_analysis(filename)
-        cls._retrievers[filename] = retriever
-        print(f"Created new FAISS retriever for '{filename}'")
-        return retriever
+#         # Create FAISS retriever for the new filename
+#         from app.agents.tools.DocumentAnalysisTools import call_document_analysis
+#         retriever = call_document_analysis(filename)
+#         cls._retrievers[filename] = retriever
+#         print(f"Created new FAISS retriever for '{filename}'")
+#         return retriever
