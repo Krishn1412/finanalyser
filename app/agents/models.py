@@ -1,6 +1,8 @@
 from typing import List, Optional
 
 from pydantic import BaseModel
+
+
 class Document(BaseModel):
     """Represents a document with its content."""
 

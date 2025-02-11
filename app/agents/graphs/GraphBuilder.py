@@ -13,6 +13,7 @@ from pathlib import Path
 import asyncio
 import PIL.Image
 from app.agents.teams.RAGTeam import q_and_a_node
+from app.agents.teams.WebScraperTeam import search_node, web_scraper_node
 from app.agents.tools.DataGeneratorTools import fetch_financial_details
 from app.agents.utils import make_supervisor_node
 from config import GOOGLE_API_KEY
@@ -28,6 +29,8 @@ PDF_STORAGE_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "pdfs
 # Ensure PDF storage directory exists
 PDF_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 pdf_filename = PDF_STORAGE_DIR / "1.pdf"
+
+
 # retriever_tool = DocumentRetriever.get_retriever(pdf_filename)
 class AgentState(TypedDict):
     # The add_messages function defines how an update should be processed
@@ -53,22 +56,34 @@ class AgentState(TypedDict):
 # pdf_filename = PDF_STORAGE_DIR / "1.pdf"
 # retriever_tool = call_document_analysis(pdf_filename)
 
-workflow = StateGraph(AgentState)
+# workflow = StateGraph(AgentState)
 
-# Define the nodes we will cycle between
-data_ingestion_supervisor_node = make_supervisor_node(
-    llm, ["data_ingestion", "data_retrieval"]
-)
-workflow.add_node("supervisor", data_ingestion_supervisor_node)  
-workflow.add_node("data_ingestion", document_ingestion_node)  
-workflow.add_node("data_retrieval", document_retreival_node)  
+# # Define the nodes we will cycle between
+# data_ingestion_supervisor_node = make_supervisor_node(
+#     llm, ["data_ingestion", "data_retrieval"]
+# )
+# workflow.add_node("supervisor", data_ingestion_supervisor_node)
+# workflow.add_node("data_ingestion", document_ingestion_node)
+# workflow.add_node("data_retrieval", document_retreival_node)
 
-# Call agent node to decide to retrieve or not
-workflow.add_edge(START, "supervisor")
+# # Call agent node to decide to retrieve or not
+# workflow.add_edge(START, "supervisor")
 
-# Compile
-graph = workflow.compile()
+# # Compile
+# graph = workflow.compile()
 
+
+# Web Scraper graph builder
+
+webscraper_supervisor_node = make_supervisor_node(llm, ["search", "web_scraper"])
+
+webscraper_builder = StateGraph(MessagesState)
+webscraper_builder.add_node("supervisor", webscraper_supervisor_node)
+webscraper_builder.add_node("search", search_node)
+webscraper_builder.add_node("web_scraper", web_scraper_node)
+
+webscraper_builder.add_edge(START, "supervisor")
+webscraper_graph = webscraper_builder.compile()
 
 # from IPython.display import Image, display
 
@@ -79,7 +94,7 @@ graph = workflow.compile()
 # #     pass
 
 # # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
-# image_bytes = graph.get_graph().draw_mermaid_png()
+# image_bytes = webscraper_graph.get_graph().draw_mermaid_png()
 
 
 # with open("output_image.png", "wb") as f:
@@ -116,10 +131,10 @@ import pprint
 
 inputs = {
     "messages": [
-        ("user", "What is the profit before tax for 2021?"),
+        ("user", "when is Taylor Swift's next tour?"),
     ]
 }
-for output in graph.stream(inputs):
+for output in webscraper_graph.stream(inputs):
     for key, value in output.items():
         pprint.pprint(f"Output from node '{key}':")
         pprint.pprint("---")

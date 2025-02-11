@@ -1,5 +1,7 @@
-from app.agents.tools.DocumentAnalysisTools import document_ingestion, document_retrieval
-from config import GOOGLE_API_KEY
+from app.agents.tools.DocumentAnalysisTools import (
+    document_ingestion,
+    document_retrieval,
+)
 import os
 from pathlib import Path
 import google.generativeai as genai
@@ -31,6 +33,7 @@ document_ingestion_agent = create_react_agent(llm, tools=[document_ingestion])
 
 document_retreival_agent = create_react_agent(llm, tools=[document_retrieval])
 
+
 def document_ingestion_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     result = document_ingestion_agent.invoke(state)
     return Command(
@@ -45,6 +48,7 @@ def document_ingestion_node(state: MessagesState) -> Command[Literal["supervisor
         goto="supervisor",
     )
 
+
 def document_retreival_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     result = document_retreival_agent.invoke(state)
     return Command(
@@ -58,4 +62,3 @@ def document_retreival_node(state: MessagesState) -> Command[Literal["supervisor
         # We want our workers to ALWAYS "report back" to the supervisor when done
         goto="supervisor",
     )
-

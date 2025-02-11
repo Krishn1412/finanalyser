@@ -22,11 +22,13 @@ from app.agents.models import ChatResponse
 from config import GOOGLE_API_KEY, FAISS_INDEX
 from langchain_core.tools import tool
 import logging
+
 logger = logging.getLogger(__name__)
 # Configure Gemini API
 genai.configure(api_key=GOOGLE_API_KEY)
 MODEL = "gemini-1.5-pro"
 model = genai.GenerativeModel(MODEL)
+
 
 async def parse_page_with_gemini(base64_image: str) -> str:
     """
@@ -35,23 +37,24 @@ async def parse_page_with_gemini(base64_image: str) -> str:
     model = genai.GenerativeModel(MODEL)
     image_data = base64.b64decode(base64_image)
 
-    image_data = {
-        "mime_type": "image/jpeg",
-        "data": image_data
-    }
+    image_data = {"mime_type": "image/jpeg", "data": image_data}
 
     # Generate content
     response = model.generate_content(
         contents=[
-            {"role": "user", "parts": [
-                {"text": "Extract information from this image into text:"},
-                {"inline_data": image_data}
-            ]}
+            {
+                "role": "user",
+                "parts": [
+                    {"text": "Extract information from this image into text:"},
+                    {"inline_data": image_data},
+                ],
+            }
         ],
-        stream=False
+        stream=False,
     )
 
     return response.text.strip() if response.text else ""
+
 
 def get_pdf_text(filepath):
     text = ""
@@ -60,6 +63,7 @@ def get_pdf_text(filepath):
         text += page.extract_text()
 
     return text
+
 
 async def document_analysis(filename: str) -> list:
     """
@@ -119,11 +123,12 @@ def process_and_store_text(
     # Store in FAISS
 
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    texts = [doc.page_content for doc in data] 
+    texts = [doc.page_content for doc in data]
     faiss_db = FAISS.from_texts(texts, embedding=embeddings)
     faiss_db.save_local(faiss_db_path)
 
     return "SUCCESS"
+
 
 @tool
 def document_ingestion(
@@ -134,9 +139,12 @@ def document_ingestion(
     status = process_and_store_text(docs_list)
     return status
 
+
 @tool
 def document_retrieval(
-    question: Annotated[str, "The user's question to be answered using the vector store."]
+    question: Annotated[
+        str, "The user's question to be answered using the vector store."
+    ]
 ) -> Annotated[Optional[ChatResponse], "The generated response to the user's question"]:
     """Fetch a response for the given question using a vector store and a language model."""
     try:
@@ -183,11 +191,12 @@ def document_retrieval(
 
         response = model.generate_content([prompt], stream=False)
 
-        logger.info(f"Generated response: {response.candidates[0].content.parts[0].text}")
+        logger.info(
+            f"Generated response: {response.candidates[0].content.parts[0].text}"
+        )
         return ChatResponse(output_text=response.candidates[0].content.parts[0].text)
 
     except Exception as e:
         error_msg = f"Error in VectorStore: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return ChatResponse(output_text=error_msg)
-

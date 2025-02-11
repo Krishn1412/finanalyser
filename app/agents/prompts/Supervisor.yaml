@@ -14,6 +14,12 @@ context: |
   - If no further workers are needed or all tasks are completed, respond with "FINISH."
   - Once a worker has returned an answer, determine whether additional processing is required.
   - If no further actions are necessary, immediately transition to "FINISH."
+  - Prevent infinite loops by ensuring the same worker is not repeatedly called unless required.
+  - For web search tasks:
+    - First, call `search_worker` (Tavily search).
+    - If a valid URL is retrieved, call `web_scraper_worker` to scrape the content.
+    - Once the web scraper provides data, move to "FINISH."
+    - Do NOT call `search_worker` again after it has provided results.
 
 instructions: |
   - Analyze the user’s request and determine the most relevant worker.
@@ -21,6 +27,12 @@ instructions: |
   - If multiple workers are involved, prioritize based on task dependencies.
   - If no tasks remain, respond with "FINISH."
   - Once a worker has responded, check if further processing is needed. If not, move to "FINISH."
+  - Don't keep calling the same node or tool, once you get a response, move on to the next step in the flow.
+  - For web scraping:
+    - If the request requires web data, start by calling `search_worker`.
+    - If a URL is returned, call `web_scraper_worker`.
+    - If `web_scraper_worker` returns valid data, move to "FINISH."
+    - Avoid looping between `search_worker` and `supervisor_node`.
   - Provide clear reasoning for your decision in the output.
 
 examples:
@@ -39,3 +51,11 @@ examples:
   - question: Summarize the extracted financial report.
     answer: Call `summarization_worker`, then move to "FINISH."
 
+  - question: Find the latest AI research on reinforcement learning.
+    answer: Call `search_worker`.
+
+  - question: Scrape the contents of this webpage https://example.com/article.
+    answer: Call `web_scraper_worker`.
+
+  - question: Get the latest news on Tesla and extract key insights.
+    answer: Call `search_worker` → If URL is found, call `web_scraper_worker` → Move to "FINISH."

@@ -96,8 +96,9 @@ def load_yaml(file_path: str):
     with open(file_path, "r") as file:
         return yaml.safe_load(file)
 
+
 # class DocumentRetriever:
-    
+
 #     _retrievers = {}  # Dictionary to store filename-retriever mapping
 
 #     @classmethod
