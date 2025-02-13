@@ -52,4 +52,3 @@ def web_scraper_node(state: State) -> Command[Literal["supervisor"]]:
         # We want our workers to ALWAYS "report back" to the supervisor when done
         goto="supervisor",
     )
-

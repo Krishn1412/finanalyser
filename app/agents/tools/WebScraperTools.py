@@ -3,6 +3,7 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.tools import tool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+
 @tool
 def scrape_webpages(urls: List[str]) -> str:
     """Use requests and bs4 to scrape the provided web pages for detailed information."""

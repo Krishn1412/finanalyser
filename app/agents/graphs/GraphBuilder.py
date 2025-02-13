@@ -30,8 +30,8 @@ PDF_STORAGE_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "pdfs
 PDF_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 pdf_filename = PDF_STORAGE_DIR / "1.pdf"
 
-
-# retriever_tool = DocumentRetriever.get_retriever(pdf_filename)
+class State(MessagesState):
+    next: str
 class AgentState(TypedDict):
     # The add_messages function defines how an update should be processed
     # Default is to replace. add_messages says "append"
@@ -39,38 +39,32 @@ class AgentState(TypedDict):
 
 
 # Create data generator graph
-# finalyser_supervisor_node = make_supervisor_node(
-#     llm, ["fetch_financial_data", "q_and_a"]
-# )
+data_generator_supervisor_node = make_supervisor_node(
+    llm, ["fetch_financial_data", "q_and_a"]
+)
 
-# finalyser_builder = StateGraph(MessagesState)
-# finalyser_builder.add_node("supervisor", finalyser_supervisor_node)
-# finalyser_builder.add_node("fetch_financial_data", fetch_financial_data_node)
-# finalyser_builder.add_node("q_and_a", q_and_a_node)
+data_generator_builder = StateGraph(MessagesState)
+data_generator_builder.add_node("supervisor", data_generator_supervisor_node)
+data_generator_builder.add_node("fetch_financial_data", fetch_financial_data_node)
+data_generator_builder.add_node("q_and_a", q_and_a_node)
+data_generator_builder.add_edge(START, "supervisor")
 
-# finalyser_builder.add_edge(START, "supervisor")
-# finalyser_graph = finalyser_builder.compile()
+data_generator_graph = data_generator_builder.compile()
 
 
 # Document Anlysis graph builder:
-# pdf_filename = PDF_STORAGE_DIR / "1.pdf"
-# retriever_tool = call_document_analysis(pdf_filename)
 
-# workflow = StateGraph(AgentState)
+data_analysis_supervisor_node = make_supervisor_node(
+    llm, ["data_ingestion", "data_retrieval"]
+)
+document_analysis_builder = StateGraph(AgentState)
+document_analysis_builder.add_node("supervisor", data_analysis_supervisor_node)
+document_analysis_builder.add_node("data_ingestion", document_ingestion_node)
+document_analysis_builder.add_node("data_retrieval", document_retreival_node)
+document_analysis_builder.add_edge(START, "supervisor")
 
-# # Define the nodes we will cycle between
-# data_ingestion_supervisor_node = make_supervisor_node(
-#     llm, ["data_ingestion", "data_retrieval"]
-# )
-# workflow.add_node("supervisor", data_ingestion_supervisor_node)
-# workflow.add_node("data_ingestion", document_ingestion_node)
-# workflow.add_node("data_retrieval", document_retreival_node)
-
-# # Call agent node to decide to retrieve or not
-# workflow.add_edge(START, "supervisor")
-
-# # Compile
-# graph = workflow.compile()
+# Compile
+document_analysis_graph = document_analysis_builder.compile()
 
 
 # Web Scraper graph builder
@@ -81,10 +75,66 @@ webscraper_builder = StateGraph(MessagesState)
 webscraper_builder.add_node("supervisor", webscraper_supervisor_node)
 webscraper_builder.add_node("search", search_node)
 webscraper_builder.add_node("web_scraper", web_scraper_node)
-
 webscraper_builder.add_edge(START, "supervisor")
+
 webscraper_graph = webscraper_builder.compile()
 
+
+#Finalyser graph
+finalyser_node = make_supervisor_node(llm, ["data_fetching_team", "document_analysis_team", "web_search_team"])
+
+
+
+def call_data_fetching_team(state: State) -> Command[Literal["supervisor"]]:
+    response = data_generator_graph.invoke({"messages": state["messages"][-1]})
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=response["messages"][-1].content, name="research_team"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
+
+def call_document_analysis_team(state: State) -> Command[Literal["supervisor"]]:
+    response = document_analysis_graph.invoke({"messages": state["messages"][-1]})
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=response["messages"][-1].content, name="writing_team"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
+
+def call_web_search_team(state: State) -> Command[Literal["supervisor"]]:
+    response = webscraper_graph.invoke({"messages": state["messages"][-1]})
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=response["messages"][-1].content, name="writing_team"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
+
+
+# Define the graph.
+finalyser_builder = StateGraph(State)
+finalyser_builder.add_node("supervisor", finalyser_node)
+finalyser_builder.add_node("data_fetching_team", call_data_fetching_team)
+finalyser_builder.add_node("document_analysis_team", call_document_analysis_team)
+finalyser_builder.add_node("web_search_team", call_web_search_team)
+finalyser_builder.add_edge(START, "supervisor")
+
+
+finalyser_graph = finalyser_builder.compile()
 # from IPython.display import Image, display
 
 # # try:
@@ -94,14 +144,14 @@ webscraper_graph = webscraper_builder.compile()
 # #     pass
 
 # # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
-# image_bytes = webscraper_graph.get_graph().draw_mermaid_png()
+image_bytes = finalyser_graph.get_graph().draw_mermaid_png()
 
 
-# with open("output_image.png", "wb") as f:
-#     f.write(image_bytes)
+with open("output_image.png", "wb") as f:
+    f.write(image_bytes)
 
-# import os
-# os.system("open output_image.png")
+import os
+os.system("open output_image.png")
 
 # for s in finalyser_graph.stream(
 #     {
