@@ -73,3 +73,14 @@ Each step is handled by a **dedicated agent**, and the **Supervisor Node** orche
    ```sh
    git clone https://github.com/your-repo-name.git
    cd your-repo-name
+2. Create a virtual environment and install the requirements:
+   ```sh
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+3. Set up environment variables using the .env.sample as a reference.
+4. Run the application using the file
+    ```sh
+    app.agents.graphs.GraphBuilder
+   
+
