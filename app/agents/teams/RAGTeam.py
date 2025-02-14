@@ -43,7 +43,6 @@ def create_pandas_agent(llm: LanguageModelLike, dataframe):
 
 q_and_a_util_agent = create_react_agent(llm, tools=[q_and_a_utils])
 
-
 def q_and_a_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     final_financial_info, human_prompt = q_and_a_util_agent.invoke(state)
     pandas_df_agent = create_pandas_agent(llm, final_financial_info)
