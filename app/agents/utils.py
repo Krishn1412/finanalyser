@@ -12,10 +12,8 @@ import yaml
 from langchain_core.prompts import ChatPromptTemplate
 
 
-def make_supervisor_node(llm: BaseChatModel, members: list[str]) -> str:
+def make_supervisor_node(llm: BaseChatModel, members: list[str], prompt_content) -> str:
     options = ["FINISH"] + members
-
-    prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
 
     system_prompt = (
         prompt_content.get("context", "")
