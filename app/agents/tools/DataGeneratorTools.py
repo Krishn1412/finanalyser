@@ -56,7 +56,3 @@ def fetch_financial_details(
         return {"error": f"Failed to fetch data: {repr(e)}"}
 
 
-if __name__ == "__main__":
-    company = "Apple"
-    result = fetch_financial_details(company)
-    # print(result)

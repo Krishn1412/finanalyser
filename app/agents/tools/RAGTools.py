@@ -9,8 +9,6 @@ from langchain_core.tools import tool
 def q_and_a_utils(
     company_name: Annotated[
         str, "The company name that user wants to know about"
-    ], human_prompt: Annotated[
-        str, "The entire content of the user input"
     ]
 ) -> Annotated[str, "financial info"]:
     """Fetch financial details for a given company, and return it"""
@@ -18,4 +16,4 @@ def q_and_a_utils(
     data = fetch_company_data(company_name)
     cash_flow, balance_sheet, financials = db_data_to_df(data)
     final_financial_info = merge_dataframes(cash_flow, balance_sheet, financials)
-    return final_financial_info, human_prompt
+    return final_financial_info

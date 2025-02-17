@@ -51,6 +51,7 @@ def create_pandas_agent(llm: LanguageModelLike, dataframe):
         verbose=True,
         agent_type=AgentType.OPENAI_FUNCTIONS,
         handle_parsing_errors=True,
+        allow_dangerous_code=True
     )
     return pandas_df_agent
 
@@ -75,7 +76,18 @@ def document_retreival_node(state: MessagesState) -> Command[Literal["q_and_a_su
 
 
 def yfinance_data_node(state: MessagesState) -> Command[Literal["q_and_a_supervisor"]]:
+    human_prompt = state['messages'][0].content
     final_financial_info = q_and_a_util_agent.invoke(state)
+    if not isinstance(final_financial_info, pd.DataFrame):
+        return Command(
+        update={
+            "messages": [
+                HumanMessage(content="No dataframe found for this company in the db", name="yfinance_db")
+            ]
+        },
+        # We want our workers to ALWAYS "report back" to the supervisor when done
+        goto="q_and_a_supervisor",
+    )
     pandas_df_agent = create_pandas_agent(llm, final_financial_info)
 
     # get prompt
