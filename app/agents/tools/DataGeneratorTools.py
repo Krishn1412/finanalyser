@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
 from app.Session.RedisSessionManager import SessionManager
-from app.agents.utils import df_to_base64, get_ticker
+from app.agents.utils import collect_and_store_prediction_metrics_yfinance, df_to_base64, get_ticker, merge_dataframes
 from app.db.db_connection import (
     insert_or_update_company_data,
     insert_or_update_user_session,
@@ -18,8 +18,7 @@ WORKING_DIRECTORY = Path(_TEMP_DIRECTORY.name)
 
 @tool
 def fetch_financial_details(
-    company_name: Annotated[str, "Name of the company to fetch finance details for."],
-    user_id: Annotated[str, "User ID for the use currently using the agent."],
+    company_name: Annotated[str, "Name of the company to fetch finance details for."]
 ) -> Annotated[Dict[str, str], "Dictionary of finance details."]:
     """Fetch financial details of a given company using yfinance."""
     try:
@@ -43,6 +42,9 @@ def fetch_financial_details(
         cash_flow_info = ticker_data.cash_flow
         balance_sheet_info = ticker_data.balance_sheet
         financial_details_info = ticker_data.financials
+        
+        merge_data = merge_dataframes(cash_flow_info, balance_sheet_info, financial_details_info)
+        test = collect_and_store_prediction_metrics_yfinance(company_name, merge_data)
 
         company_data = {
             "cash_flow": df_to_base64(cash_flow_info),

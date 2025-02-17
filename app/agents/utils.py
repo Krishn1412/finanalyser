@@ -94,21 +94,32 @@ def load_yaml(file_path: str):
     with open(file_path, "r") as file:
         return yaml.safe_load(file)
 
+def collect_and_store_prediction_metrics_yfinance(comapny_name, df_yf):
+    df = df_yf
+    df_metrics = pd.DataFrame()
+    df_metrics["revenue"] = df.loc["Total Revenue"][0] if "Total Revenue" in df.index else None
+    df_metrics["net_income"] = df.loc["Net Income"][0] if "Net Income" in df.index else None
+    df_metrics["current_assets"] = df.loc["Total Current Assets"][0] if "Total Current Assets" in df.index else None
+    df_metrics["current_liabilities"] = df.loc["Total Current Liabilities"][0] if "Total Current Liabilities" in df.index else None
+    df_metrics["total_debt"] = df.loc["Total Debt"][0] if "Total Debt" in df.index else None
+    df_metrics["total_equity"] = df.loc["Total Equity"][0] if "Total Equity" in df.index else None
+    df_metrics["operating_cash_flow"] = df.loc["Operating Cash Flow"][0] if "Operating Cash Flow" in df.index else None
+    df_metrics["capital_expenditures"] = df.loc["Capital Expenditures"][0] if "Capital Expenditures" in df.index else None
+    df_metrics["outstanding_shares"] = df.loc["Common Stock Shares Outstanding"][0] if "Common Stock Shares Outstanding" in df.index else None
 
-# class DocumentRetriever:
+    # Compute financial metrics
+    df_metrics["revenue_growth"] = df_metrics["revenue"].pct_change() * 100  # % Revenue Growth
+    df_metrics["net_profit_margin"] = (df_metrics["net_income"] / df_metrics["revenue"]) * 100  # % Net Profit Margin
+    df_metrics["current_ratio"] = df_metrics["current_assets"] / df_metrics["current_liabilities"]  # Current Ratio
+    df_metrics["debt_to_equity"] = df_metrics["total_debt"] / df_metrics["total_equity"]  # Debt-to-Equity Ratio
+    df_metrics["free_cash_flow"] = df_metrics["operating_cash_flow"] - df_metrics["capital_expenditures"]  # Free Cash Flow
+    df_metrics["return_on_equity"] = (df_metrics["net_income"] / df_metrics["total_equity"]) * 100  # % ROE
+    df_metrics["eps"] = df_metrics["net_income"] / df_metrics["outstanding_shares"]  # Earnings Per Share (EPS)
 
-#     _retrievers = {}  # Dictionary to store filename-retriever mapping
+    # Select relevant columns
+    df_metrics = df[["revenue_growth", "net_profit_margin", "current_ratio", "debt_to_equity",
+                      "free_cash_flow", "return_on_equity", "eps"]].dropna()
 
-#     @classmethod
-#     def get_retriever(cls, filename):
-#         """Returns an existing FAISS retriever if it exists, else creates a new one."""
-#         if filename in cls._retrievers:
-#             print(f"Retriever for '{filename}' already exists. Returning existing retriever.")
-#             return cls._retrievers[filename]
+    return df_metrics
 
-#         # Create FAISS retriever for the new filename
-#         from app.agents.tools.DocumentAnalysisTools import call_document_analysis
-#         retriever = call_document_analysis(filename)
-#         cls._retrievers[filename] = retriever
-#         print(f"Created new FAISS retriever for '{filename}'")
-#         return retriever
+

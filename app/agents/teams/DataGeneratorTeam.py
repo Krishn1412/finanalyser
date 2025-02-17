@@ -16,7 +16,7 @@ fetch_financial_details_agent = create_react_agent(llm, tools=[fetch_financial_d
 document_ingestion_agent = create_react_agent(llm, tools=[document_ingestion])
 
 
-def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+def fetch_financial_data_node(state: MessagesState) -> Command[Literal["data_fetch_and_store_supervisor"]]:
     result = fetch_financial_details_agent.invoke(state)
     return Command(
         update={
@@ -27,11 +27,11 @@ def fetch_financial_data_node(state: MessagesState) -> Command[Literal["supervis
             ]
         },
         # We want our workers to ALWAYS "report back" to the supervisor when done
-        goto="supervisor",
+        goto="data_fetch_and_store_supervisor",
     )
 
 
-def document_ingestion_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+def document_ingestion_node(state: MessagesState) -> Command[Literal["data_fetch_and_store_supervisor"]]:
     result = document_ingestion_agent.invoke(state)
     return Command(
         update={
@@ -42,5 +42,5 @@ def document_ingestion_node(state: MessagesState) -> Command[Literal["supervisor
             ]
         },
         # We want our workers to ALWAYS "report back" to the supervisor when done
-        goto="supervisor",
+        goto="data_fetch_and_store_supervisor",
     )

@@ -4,7 +4,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, trim_messages
-from app.agents.teams.DataGeneratorTeam import fetch_financial_data_node
+from app.agents.teams.DataGeneratorTeam import document_ingestion_node, fetch_financial_data_node
 from pathlib import Path
 import asyncio
 import PIL.Image
@@ -37,35 +37,35 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
-# # Create data fetch and store graph
-# prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
-# data_fetch_and_store_supervisor_node = make_supervisor_node(
-#     llm, ["fetch_financial_data", "data_ingestion"], prompt_content
-# )
+# Create data fetch and store graph
+prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
+data_fetch_and_store_supervisor_node = make_supervisor_node(
+    llm, ["fetch_financial_data", "data_ingestion"], prompt_content
+)
 
-# data_fetch_and_store_builder = StateGraph(MessagesState)
-# data_fetch_and_store_builder.add_node("data_fetch_and_store_supervisor", data_fetch_and_store_supervisor_node)
-# data_fetch_and_store_builder.add_node("fetch_financial_data", fetch_financial_data_node)
-# data_fetch_and_store_builder.add_node("data_ingestion", document_ingestion_node)
-# data_fetch_and_store_builder.add_edge(START, "data_fetch_and_store_supervisor")
+data_fetch_and_store_builder = StateGraph(MessagesState)
+data_fetch_and_store_builder.add_node("data_fetch_and_store_supervisor", data_fetch_and_store_supervisor_node)
+data_fetch_and_store_builder.add_node("fetch_financial_data", fetch_financial_data_node)
+data_fetch_and_store_builder.add_node("data_ingestion", document_ingestion_node)
+data_fetch_and_store_builder.add_edge(START, "data_fetch_and_store_supervisor")
 
-# data_generator_graph = data_fetch_and_store_builder.compile()
+data_generator_graph = data_fetch_and_store_builder.compile()
 
 
 # Q/A graph builder:
-prompt_content = load_yaml("app/agents/prompts/QnAPrompt.yaml")
-q_and_a_supervisor_node = make_supervisor_node(
-    llm, ["data_retrieval", "yfinance_data", "web_search_node"], prompt_content
-)
-q_and_a_builder = StateGraph(AgentState)
-q_and_a_builder.add_node("q_and_a_supervisor", q_and_a_supervisor_node)
-q_and_a_builder.add_node("data_retrieval", document_retreival_node)
-q_and_a_builder.add_node("yfinance_data", yfinance_data_node)
-q_and_a_builder.add_node("web_search_node", web_search_node)
-q_and_a_builder.add_edge(START, "q_and_a_supervisor")
+# prompt_content = load_yaml("app/agents/prompts/QnAPrompt.yaml")
+# q_and_a_supervisor_node = make_supervisor_node(
+#     llm, ["data_retrieval", "yfinance_data", "web_search_node"], prompt_content
+# )
+# q_and_a_builder = StateGraph(AgentState)
+# q_and_a_builder.add_node("q_and_a_supervisor", q_and_a_supervisor_node)
+# q_and_a_builder.add_node("data_retrieval", document_retreival_node)
+# q_and_a_builder.add_node("yfinance_data", yfinance_data_node)
+# q_and_a_builder.add_node("web_search_node", web_search_node)
+# q_and_a_builder.add_edge(START, "q_and_a_supervisor")
 
-# Compile
-q_and_a_graph = q_and_a_builder.compile()
+# # Compile
+# q_and_a_graph = q_and_a_builder.compile()
 
 
 # # Web Scraper graph builder
@@ -149,7 +149,7 @@ q_and_a_graph = q_and_a_builder.compile()
 # #     pass
 
 # # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
-# image_bytes = q_and_a_graph.get_graph().draw_mermaid_png()
+# image_bytes = data_generator_graph.get_graph().draw_mermaid_png()
 
 
 # with open("output_image.png", "wb") as f:
@@ -187,10 +187,10 @@ import pprint
 
 inputs = {
     "messages": [
-        ("user", "when is Taylor Swift's next tour?"),
+        ("user", "Fetch the data for Apple"),
     ]
 }
-for output in q_and_a_graph.stream(inputs):
+for output in data_generator_graph.stream(inputs):
     for key, value in output.items():
         pprint.pprint(f"Output from node '{key}':")
         pprint.pprint("---")
