@@ -49,23 +49,23 @@ data_fetch_and_store_builder.add_node("fetch_financial_data", fetch_financial_da
 data_fetch_and_store_builder.add_node("data_ingestion", document_ingestion_node)
 data_fetch_and_store_builder.add_edge(START, "data_fetch_and_store_supervisor")
 
-data_generator_graph = data_fetch_and_store_builder.compile()
+data_fetch_and_store_graph = data_fetch_and_store_builder.compile()
 
 
 # Q/A graph builder:
-# prompt_content = load_yaml("app/agents/prompts/QnAPrompt.yaml")
-# q_and_a_supervisor_node = make_supervisor_node(
-#     llm, ["data_retrieval", "yfinance_data", "web_search_node"], prompt_content
-# )
-# q_and_a_builder = StateGraph(AgentState)
-# q_and_a_builder.add_node("q_and_a_supervisor", q_and_a_supervisor_node)
-# q_and_a_builder.add_node("data_retrieval", document_retreival_node)
-# q_and_a_builder.add_node("yfinance_data", yfinance_data_node)
-# q_and_a_builder.add_node("web_search_node", web_search_node)
-# q_and_a_builder.add_edge(START, "q_and_a_supervisor")
+prompt_content = load_yaml("app/agents/prompts/QnAPrompt.yaml")
+q_and_a_supervisor_node = make_supervisor_node(
+    llm, ["data_retrieval", "yfinance_data", "web_search_node"], prompt_content
+)
+q_and_a_builder = StateGraph(AgentState)
+q_and_a_builder.add_node("q_and_a_supervisor", q_and_a_supervisor_node)
+q_and_a_builder.add_node("data_retrieval", document_retreival_node)
+q_and_a_builder.add_node("yfinance_data", yfinance_data_node)
+q_and_a_builder.add_node("web_search_node", web_search_node)
+q_and_a_builder.add_edge(START, "q_and_a_supervisor")
 
-# # Compile
-# q_and_a_graph = q_and_a_builder.compile()
+# Compile
+q_and_a_graph = q_and_a_builder.compile()
 
 
 # # Web Scraper graph builder
@@ -81,39 +81,39 @@ data_generator_graph = data_fetch_and_store_builder.compile()
 # webscraper_graph = webscraper_builder.compile()
 
 
-# # Finalyser graph
-# prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
-# finalyser_node = make_supervisor_node(
-#     llm, ["data_fetching_team", "document_analysis_team", "web_search_team"], prompt_content
-# )
+# Finalyser graph
+prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
+finalyser_node = make_supervisor_node(
+    llm, ["data_fetch_and_store_team", "q_and_a_team"], prompt_content
+)
 
 
-# def call_data_fetching_team(state: State) -> Command[Literal["supervisor"]]:
-#     response = data_generator_graph.invoke({"messages": state["messages"][-1]})
-#     return Command(
-#         update={
-#             "messages": [
-#                 HumanMessage(
-#                     content=response["messages"][-1].content, name="research_team"
-#                 )
-#             ]
-#         },
-#         goto="supervisor",
-#     )
+def call_data_fetch_and_store_team(state: State) -> Command[Literal["supervisor"]]:
+    response = data_fetch_and_store_graph.invoke({"messages": state["messages"][-1]})
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=response["messages"][-1].content, name="research_team"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
 
 
-# def call_document_analysis_team(state: State) -> Command[Literal["supervisor"]]:
-#     response = document_analysis_graph.invoke({"messages": state["messages"][-1]})
-#     return Command(
-#         update={
-#             "messages": [
-#                 HumanMessage(
-#                     content=response["messages"][-1].content, name="writing_team"
-#                 )
-#             ]
-#         },
-#         goto="supervisor",
-#     )
+def call_q_and_a_team(state: State) -> Command[Literal["supervisor"]]:
+    response = q_and_a_graph.invoke({"messages": state["messages"][-1]})
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=response["messages"][-1].content, name="writing_team"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
 
 
 # def call_web_search_team(state: State) -> Command[Literal["supervisor"]]:
@@ -130,16 +130,18 @@ data_generator_graph = data_fetch_and_store_builder.compile()
 #     )
 
 
-# # Define the graph.
-# finalyser_builder = StateGraph(State)
-# finalyser_builder.add_node("supervisor", finalyser_node)
-# finalyser_builder.add_node("data_fetching_team", call_data_fetching_team)
-# finalyser_builder.add_node("document_analysis_team", call_document_analysis_team)
+# Define the graph.
+finalyser_builder = StateGraph(State)
+finalyser_builder.add_node("supervisor", finalyser_node)
+finalyser_builder.add_node("data_fetching_team", call_data_fetch_and_store_team)
+finalyser_builder.add_node("document_analysis_team", call_q_and_a_team)
 # finalyser_builder.add_node("web_search_team", call_web_search_team)
-# finalyser_builder.add_edge(START, "supervisor")
+finalyser_builder.add_edge(START, "supervisor")
 
 
-# finalyser_graph = finalyser_builder.compile()
+finalyser_graph = finalyser_builder.compile()
+
+
 # from IPython.display import Image, display
 
 # # try:
@@ -159,30 +161,8 @@ data_generator_graph = data_fetch_and_store_builder.compile()
 
 # os.system("open output_image.png")
 
-# for s in finalyser_graph.stream(
-#     {
-#         "messages": [
-#             (
-#                 "user",
-#                 "Answer me the question, what is the net revenue of Amazon, user_id is anon_11",
-#             )
-#         ],
-#     },
-#     {"recursion_limit": 150},
-# ):
-#     print(s)
-#     print("---")
 
-# s = graph.stream(
-#     {
-#         "messages": [
-#             ("user", "What is the profit before tax for 2021?")
-#         ],
-#     }
-# )
-# print(s)
-# Answer me the question, what is the net revenue of Amazon, user_id is anon_11
-# Fetch the financial data of Amazon, user_id is anon_11
+
 import pprint
 
 inputs = {
@@ -190,12 +170,10 @@ inputs = {
         ("user", "Fetch the data for Apple"),
     ]
 }
-for output in data_generator_graph.stream(inputs):
+for output in finalyser_graph.stream(inputs):
     for key, value in output.items():
         pprint.pprint(f"Output from node '{key}':")
         pprint.pprint("---")
         pprint.pprint(value, indent=2, width=80, depth=None)
     pprint.pprint("\n---\n")
 
-# f"Ingest the document present at {pdf_filename}"
-# "What is the profit before tax for 2021?"

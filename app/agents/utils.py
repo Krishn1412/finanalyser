@@ -116,7 +116,7 @@ def collect_and_store_prediction_metrics_yfinance(comapny_name, df_yf):
     df_metrics["return_on_equity"] = (df_metrics["net_income"] / df_metrics["total_equity"]) * 100  # % ROE
 
     # Select relevant columns
-    df_metrics = df[["revenue_growth", "net_profit_margin", "current_ratio", "debt_to_equity",
+    df_metrics = df_metrics[["revenue_growth", "net_profit_margin", "current_ratio", "debt_to_equity",
                       "free_cash_flow", "return_on_equity"]].dropna()
 
     return df_metrics

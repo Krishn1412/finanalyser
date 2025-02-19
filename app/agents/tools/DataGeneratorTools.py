@@ -28,24 +28,11 @@ def fetch_financial_details(
         if not ticker_data:
             return {"error": "Company not found on Yahoo Finance."}
 
-        # # Create a session to store the data
-        # session_manager = SessionManager(
-        #     redis_host="localhost", redis_port=6379, session_ttl=3600
-        # )
-        # session_data = {"company_name": company_name}
-        # session_id = session_manager.create_session(session_data)
-        # print(f"New session created: {session_id}")
-
-        # # Store session id in the database
-        # insert_or_update_user_session(user_id, session_id)
 
         cash_flow_info = ticker_data.cash_flow
         balance_sheet_info = ticker_data.balance_sheet
         financial_details_info = ticker_data.financials
         
-        merge_data = merge_dataframes(cash_flow_info, balance_sheet_info, financial_details_info)
-        test = collect_and_store_prediction_metrics_yfinance(company_name, merge_data)
-
         company_data = {
             "cash_flow": df_to_base64(cash_flow_info),
             "balance_sheet": df_to_base64(balance_sheet_info),
