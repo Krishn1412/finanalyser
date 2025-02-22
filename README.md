@@ -4,45 +4,77 @@
 ## **Overview**
 This project is a **multi-agent hierarchical financial analysis research tool** built using LangGraph. It demonstrates how **hierarchical multi-agent frameworks** can be implemented for financial data analysis, research, and prediction.
 
-The system consists of **four major components**, each handled by specialized agents:
+The system consists of **two primary nodes**:
+1. **Data Fetch & Store Node**
+2. **Q&A Node**
 
-1. **Data Fetching & Question Answering**  
-   - If a user asks a question about financial data (e.g., *"What is Apple's current stock price?"*), the system fetches data from sources like `yfinance` and stores it in a database.  
-   - Once the data is available, the system answers the question using the stored information.  
+Each of these nodes contains specialized sub-nodes to handle different types of financial data.
 
-2. **Financial Data Ingestion & Q/A**  
-   - Allows ingestion of structured financial documents, such as **balance sheets, income statements, and cash flow statements**.  
-   - Users can perform **question-answering** on the ingested data to extract insights.  
+---
 
-3. **Web Scraping & Search**  
-   - When external financial data is needed, the system can **search the web** for relevant information using a search API.  
-   - If deeper extraction is required, a **web scraper** retrieves data from a specific URL.  
+## **System Architecture**
 
-4. **Data Prediction**  
-   - Uses predictive algorithms to forecast financial trends based on historical data.  
-   - Helps in estimating future stock movements or financial performance.  
+### **1. Data Fetch & Store Node**
+This node is responsible for fetching financial data from different sources and storing them efficiently.
+
+It consists of two sub-nodes:
+
+#### **a. YFinance Fetching Node**
+- Fetches financial data such as stock prices, earnings reports, and historical trends using the **YFinance API**.
+- Stores the structured financial data in a **PostgreSQL database**.
+
+#### **b. Financial Document Ingestion Node**
+- Accepts financial documents like **balance sheets, income statements, and cash flow statements** in **PDF format**.
+- Extracts relevant data and stores it in a **vector database (FAISS)** for efficient retrieval.
+
+---
+
+### **2. Q&A Node**
+This node processes user queries by searching financial data across different sources.
+
+It consists of three sub-nodes:
+
+#### **a. Vector Search Node**
+- Searches the **vector database** for relevant information from ingested financial PDFs.
+- Uses **FAISS** to perform fast and efficient retrieval of stored document embeddings.
+
+#### **b. PostgreSQL Query Node**
+- Fetches financial data for a given company from the **PostgreSQL database**.
+- Calls the **Pandas Agent** to analyze the retrieved data and generate responses.
+
+#### **c. Web Scraper Node**
+- Performs a **real-time web search** for additional financial data.
+- Uses scraping APIs to extract relevant financial insights from the internet.
+
+Each time a user asks a financial question, **all three sub-nodes** (Vector Search, PostgreSQL Query, Web Scraper) are executed, and the system returns results from each source.
 
 ---
 
 ## **Technology Stack**
 - **Python** (Main backend development)
 - **LangGraph** (Hierarchical multi-agent framework)
-- **yfinance** (Stock market data retrieval)
+- **YFinance API** (Stock market data retrieval)
 - **FAISS** (Vector store for efficient document retrieval)
-- **PostgreSQL** (Database for storing financial data)
+- **PostgreSQL** (Relational database for structured financial data)
+- **Pandas Agent** (For performing data analysis on retrieved financial data)
 - **Web Scraping APIs** (For real-time financial data extraction)
 
 ---
 
 ## **How It Works**
-1. **User requests financial data** → The system fetches data and answers the query.
-2. **User uploads financial documents** → The system ingests and allows Q/A on it.
-3. **User requests external financial insights** → The system searches the web and scrapes data if needed.
-4. **User wants predictions** → The system applies financial forecasting algorithms.
+1. **User requests financial data** → The system fetches data from YFinance and PostgreSQL.
+2. **User uploads financial documents** → The system processes and stores them in a vector database.
+3. **User asks a financial question** → The system retrieves relevant answers from:
+   - Vector DB (PDFs)
+   - PostgreSQL DB (Structured data + Pandas analysis)
+   - Web Search (Real-time financial insights)
 
-Each step is handled by a **dedicated agent**, and the **Supervisor Node** orchestrates the workflow, ensuring a structured and efficient analysis process.
+All three answers are returned, providing a **comprehensive financial analysis**.
 
 ---
+
+This setup ensures that **financial insights are data-driven, sourced from multiple locations, and cross-verified for accuracy.** 🚀
+
 
 ## **Installation & Setup**
 1. Clone the repository:
