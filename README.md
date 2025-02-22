@@ -56,7 +56,6 @@ Each time a user asks a financial question, **all three sub-nodes** (Vector Sear
 - **YFinance API** (Stock market data retrieval)
 - **FAISS** (Vector store for efficient document retrieval)
 - **PostgreSQL** (Relational database for structured financial data)
-- **Pandas Agent** (For performing data analysis on retrieved financial data)
 - **Web Scraping APIs** (For real-time financial data extraction)
 
 ---
