@@ -15,3 +15,5 @@ pillow
 faiss-cpu
 PyPDF2
 langchain-google-vertexai
+fastapi
+uvicorn

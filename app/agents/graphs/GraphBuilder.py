@@ -3,19 +3,15 @@ from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
-from langchain_core.messages import HumanMessage, trim_messages
 from app.agents.teams.DataGeneratorTeam import document_ingestion_node, fetch_financial_data_node
 from pathlib import Path
 import asyncio
 import PIL.Image
 from app.agents.teams.RAGTeam import document_retreival_node, yfinance_data_node, web_search_node
-from app.agents.teams.WebScraperTeam import search_node, web_scraper_node
-from app.agents.tools.DataGeneratorTools import fetch_financial_details
 from app.agents.utils import load_yaml, make_supervisor_node
 from config import GOOGLE_API_KEY
 from IPython.display import Image, display
 import os
-from langgraph.prebuilt import tools_condition, ToolNode
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -88,7 +84,7 @@ finalyser_node = make_supervisor_node(
 )
 
 
-def call_data_fetch_and_store_team(state: State) -> Command[Literal["supervisor"]]:
+def call_data_fetch_and_store_team(state: State) -> Command[Literal["finalyser_supervisor"]]:
     response = data_fetch_and_store_graph.invoke({"messages": state["messages"][-1]})
     return Command(
         update={
@@ -98,11 +94,11 @@ def call_data_fetch_and_store_team(state: State) -> Command[Literal["supervisor"
                 )
             ]
         },
-        goto="supervisor",
+        goto="finalyser_supervisor",
     )
 
 
-def call_q_and_a_team(state: State) -> Command[Literal["supervisor"]]:
+def call_q_and_a_team(state: State) -> Command[Literal["finalyser_supervisor"]]:
     response = q_and_a_graph.invoke({"messages": state["messages"][-1]})
     return Command(
         update={
@@ -112,7 +108,7 @@ def call_q_and_a_team(state: State) -> Command[Literal["supervisor"]]:
                 )
             ]
         },
-        goto="supervisor",
+        goto="finalyser_supervisor",
     )
 
 
@@ -132,11 +128,11 @@ def call_q_and_a_team(state: State) -> Command[Literal["supervisor"]]:
 
 # Define the graph.
 finalyser_builder = StateGraph(State)
-finalyser_builder.add_node("supervisor", finalyser_node)
-finalyser_builder.add_node("data_fetching_team", call_data_fetch_and_store_team)
-finalyser_builder.add_node("document_analysis_team", call_q_and_a_team)
+finalyser_builder.add_node("finalyser_supervisor", finalyser_node)
+finalyser_builder.add_node("data_fetch_and_store_team", call_data_fetch_and_store_team)
+finalyser_builder.add_node("q_and_a_team", call_q_and_a_team)
 # finalyser_builder.add_node("web_search_team", call_web_search_team)
-finalyser_builder.add_edge(START, "supervisor")
+finalyser_builder.add_edge(START, "finalyser_supervisor")
 
 
 finalyser_graph = finalyser_builder.compile()
@@ -151,7 +147,7 @@ finalyser_graph = finalyser_builder.compile()
 # #     pass
 
 # # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
-# image_bytes = data_generator_graph.get_graph().draw_mermaid_png()
+# image_bytes = finalyser_graph.get_graph().draw_mermaid_png()
 
 
 # with open("output_image.png", "wb") as f:
@@ -163,17 +159,17 @@ finalyser_graph = finalyser_builder.compile()
 
 
 
-import pprint
+# import pprint
 
-inputs = {
-    "messages": [
-        ("user", "Fetch the data for Apple"),
-    ]
-}
-for output in finalyser_graph.stream(inputs):
-    for key, value in output.items():
-        pprint.pprint(f"Output from node '{key}':")
-        pprint.pprint("---")
-        pprint.pprint(value, indent=2, width=80, depth=None)
-    pprint.pprint("\n---\n")
+# inputs = {
+#     "messages": [
+#         ("user", "Fetch the data for Apple"),
+#     ]
+# }
+# for output in finalyser_graph.stream(inputs):
+#     for key, value in output.items():
+#         pprint.pprint(f"Output from node '{key}':")
+#         pprint.pprint("---")
+#         pprint.pprint(value, indent=2, width=80, depth=None)
+#     pprint.pprint("\n---\n")
 
