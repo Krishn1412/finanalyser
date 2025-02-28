@@ -60,13 +60,12 @@ q_and_a_util_agent = create_react_agent(llm, tools=[q_and_a_utils])
 
 
 def document_retreival_node(state: MessagesState) -> Command[Literal["q_and_a_supervisor"]]:
-    # result = document_retreival_agent.invoke(state)
-    result = "good boy"
+    result = document_retreival_agent.invoke(state)
     return Command(
         update={
             "messages": [
                 HumanMessage(
-                    content=result, name="vector_search"
+                    content=result["messages"][-1].content, name="vector_search"
                 )
             ]
         },
