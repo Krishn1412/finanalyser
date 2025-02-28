@@ -1,4 +1,4 @@
-
+![image](https://github.com/user-attachments/assets/7ff0bead-5d1b-4257-938a-5c133a7301f3)
 # **Finanalyser: Financial Analysis Multi-Agent Research Tool**
 
 ## **Overview**
@@ -91,7 +91,5 @@ This setup ensures that **financial insights are data-driven, sourced from multi
     app.agents.graphs.GraphBuilder
    
 
-<img width="546" alt="Screenshot 2024-12-31 at 11 09 42 PM" src="https://github.com/user-attachments/assets/e520e803-1c64-4890-849f-d45901353618" />
+https://cdn-images-1.medium.com/max/1200/1*It9pctf7JTudPQJYmFOGmA.png![image](https://github.com/user-attachments/assets/7efa2989-4607-4c3e-9a3c-88e39fd00ee7)
 
-
-<img width="1230" alt="Screenshot 2025-01-02 at 1 12 46 PM" src="https://github.com/user-attachments/assets/058fddf1-6e07-4be6-8799-fa03380f2ce0" />
