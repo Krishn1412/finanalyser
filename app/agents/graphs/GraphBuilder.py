@@ -1,19 +1,15 @@
-from typing import Annotated, List, Optional, Literal, Sequence, TypedDict
+from typing import Annotated, Literal, Sequence, TypedDict
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
 from app.agents.teams.DataGeneratorTeam import document_ingestion_node, fetch_financial_data_node
 from pathlib import Path
-import asyncio
-import PIL.Image
 from app.agents.teams.RAGTeam import document_retreival_node, yfinance_data_node, web_search_node
 from app.agents.utils import load_yaml, make_supervisor_node
 from config import GOOGLE_API_KEY
-from IPython.display import Image, display
-import os
 from langgraph.graph.message import add_messages
-from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", google_api_key=GOOGLE_API_KEY)
 PDF_STORAGE_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "pdfs"
@@ -64,19 +60,6 @@ q_and_a_builder.add_edge(START, "q_and_a_supervisor")
 q_and_a_graph = q_and_a_builder.compile()
 
 
-# # Web Scraper graph builder
-# prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
-# webscraper_supervisor_node = make_supervisor_node(llm, ["search", "web_scraper"], prompt_content)
-
-# webscraper_builder = StateGraph(MessagesState)
-# webscraper_builder.add_node("webscraper_supervisor", webscraper_supervisor_node)
-# webscraper_builder.add_node("search", search_node)
-# webscraper_builder.add_node("web_scraper", web_scraper_node)
-# webscraper_builder.add_edge(START, "webscraper_supervisor")
-
-# webscraper_graph = webscraper_builder.compile()
-
-
 # Finalyser graph
 prompt_content = load_yaml("app/agents/prompts/Supervisor.yaml")
 finalyser_node = make_supervisor_node(
@@ -112,41 +95,18 @@ def call_q_and_a_team(state: State) -> Command[Literal["finalyser_supervisor"]]:
     )
 
 
-# def call_web_search_team(state: State) -> Command[Literal["supervisor"]]:
-#     response = webscraper_graph.invoke({"messages": state["messages"][-1]})
-#     return Command(
-#         update={
-#             "messages": [
-#                 HumanMessage(
-#                     content=response["messages"][-1].content, name="writing_team"
-#                 )
-#             ]
-#         },
-#         goto="supervisor",
-#     )
-
-
 # Define the graph.
 finalyser_builder = StateGraph(State)
 finalyser_builder.add_node("finalyser_supervisor", finalyser_node)
 finalyser_builder.add_node("data_fetch_and_store_team", call_data_fetch_and_store_team)
 finalyser_builder.add_node("q_and_a_team", call_q_and_a_team)
-# finalyser_builder.add_node("web_search_team", call_web_search_team)
 finalyser_builder.add_edge(START, "finalyser_supervisor")
 
 
 finalyser_graph = finalyser_builder.compile()
 
 
-# from IPython.display import Image, display
 
-# # try:
-# #     display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
-# # except Exception:
-# #     # This requires some extra dependencies and is optional
-# #     pass
-
-# # # display(Image(finalyser_graph.get_graph().draw_mermaid_png()))
 # image_bytes = finalyser_graph.get_graph().draw_mermaid_png()
 
 
@@ -157,19 +117,4 @@ finalyser_graph = finalyser_builder.compile()
 
 # os.system("open output_image.png")
 
-
-
-# import pprint
-
-# inputs = {
-#     "messages": [
-#         ("user", "Fetch the data for Apple"),
-#     ]
-# }
-# for output in finalyser_graph.stream(inputs):
-#     for key, value in output.items():
-#         pprint.pprint(f"Output from node '{key}':")
-#         pprint.pprint("---")
-#         pprint.pprint(value, indent=2, width=80, depth=None)
-#     pprint.pprint("\n---\n")
 

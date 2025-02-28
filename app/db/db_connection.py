@@ -244,9 +244,3 @@ def fetch_company_data(company_name):
     finally:
         connection_pool.putconn(conn)
 
-
-# data = fetch_company_data("Apple")
-# a, b, c = db_data_to_df(data)
-# print(c)
-
-# create_user_session_table()

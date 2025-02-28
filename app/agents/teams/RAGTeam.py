@@ -33,9 +33,9 @@ search_agent = create_react_agent(llm, tools=[tavily_tool])
 class AgentState(TypedDict):
     """State of the Pandas Agent."""
 
-    messages: Sequence[BaseMessage]  # Conversation messages
-    is_last_step: IsLastStep  # Indicator for the last step
-    df: pd.DataFrame  # The DataFrame being operated upon
+    messages: Sequence[BaseMessage] 
+    is_last_step: IsLastStep 
+    df: pd.DataFrame 
 
 
 document_retreival_agent = create_react_agent(llm, tools=[document_retrieval])
