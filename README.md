@@ -89,7 +89,10 @@ This setup ensures that **financial insights are data-driven, sourced from multi
 4. Run the application using the file
     ```sh
     app.agents.graphs.GraphBuilder
+
+![Screenshot 2025-02-28 at 1 54 44 PM](https://github.com/user-attachments/assets/76e3ae5b-c848-4e1e-a6c2-c1705ad07bf6)
+
    
 
-https://cdn-images-1.medium.com/max/1200/1*It9pctf7JTudPQJYmFOGmA.png![image](https://github.com/user-attachments/assets/7efa2989-4607-4c3e-9a3c-88e39fd00ee7)
+
 
