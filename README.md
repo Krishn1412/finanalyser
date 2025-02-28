@@ -86,9 +86,13 @@ This setup ensures that **financial insights are data-driven, sourced from multi
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
 3. Set up environment variables using the .env.sample as a reference.
-4. Run the application using the file
-    ```sh
-    app.agents.graphs.GraphBuilder
+4. To start the API, use the following command:
+   ```sh
+   uvicorn app.api.api:app --host 0.0.0.0 --port 8001
+5. Once the server is running, you can make a request using:
+   ```sh
+   curl -X POST "http://localhost:8001/query/" -H "Content-Type: application/json" -d '{"query": "Fetch the data for Apple"}'
+
 
 ![Screenshot 2025-02-28 at 1 54 44 PM](https://github.com/user-attachments/assets/76e3ae5b-c848-4e1e-a6c2-c1705ad07bf6)
 
