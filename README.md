@@ -29,8 +29,8 @@ It consists of two sub-nodes:
 
 ---
 
-### **2. Q&A Node**
-This node processes user queries by searching financial data across different sources.
+### **2. Q&A Node**  
+This node processes user queries by searching financial data across different sources. 
 
 It consists of three sub-nodes:
 
